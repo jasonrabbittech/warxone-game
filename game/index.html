@@ -229,15 +229,26 @@
 <script>
 // ==================== SOUND ENGINE ====================
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
-const soundCtx = new AudioCtx();
+let soundCtx = null;
+function getSoundCtx() {
+    if (!soundCtx) {
+        try { soundCtx = new AudioCtx(); } catch(e) { return null; }
+    }
+    if (soundCtx.state === 'suspended') { try { soundCtx.resume(); } catch(e) {} }
+    return soundCtx;
+}
 function playTone(freq, type, duration, vol=0.3) {
-    const osc = soundCtx.createOscillator();
-    const gain = soundCtx.createGain();
-    osc.type = type; osc.frequency.setValueAtTime(freq, soundCtx.currentTime);
-    gain.gain.setValueAtTime(vol, soundCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, soundCtx.currentTime + duration);
-    osc.connect(gain); gain.connect(soundCtx.destination);
-    osc.start(); osc.stop(soundCtx.currentTime + duration);
+    const ctx = getSoundCtx();
+    if (!ctx) return;
+    try {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(vol, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + duration);
+    } catch(e) {}
 }
 const SFX = {
     battleStart: () => { playTone(220, 'sawtooth', 0.5); setTimeout(()=>playTone(330,'square',0.3),100); },
@@ -645,7 +656,7 @@ class WarXoneGame {
     // ==================== CENTRAL ACTION HANDLER ====================
     handleAction(action, e) {
         if (e) { e.preventDefault(); e.stopPropagation(); }
-        SFX.buttonClick();
+        try { SFX.buttonClick(); } catch(ex) {}
         switch(action) {
             // Navigation
             case 'new-game': this.showScreen('signup'); break;
