@@ -1,0 +1,55 @@
+name: Terraform PR Check
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ['infra/**']
+
+jobs:
+  terraform-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/environments/prod
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.9"
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive ../../../infra/
+
+      - name: Terraform Init
+        run: terraform init -backend=false
+        env:
+          TF_CLI_ARGS_init: "-input=false"
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: terraform plan -input=false -no-color
+        env:
+          TENCENTCLOUD_SECRET_ID: ${{ secrets.TENCENTCLOUD_SECRET_ID }}
+          TENCENTCLOUD_SECRET_KEY: ${{ secrets.TENCENTCLOUD_SECRET_KEY }}
+
+      - name: Comment PR with Plan
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+        with:
+          script: |
+            const output = `#### Terraform Plan 📖\n
+            \`\`\`\n${process.env.PLAN}\n\`\`\``;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });

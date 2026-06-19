@@ -1,0 +1,42 @@
+name: Terraform Apply
+
+on:
+  push:
+    branches: [main]
+    paths: ['infra/**']
+
+jobs:
+  terraform-apply:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/environments/prod
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.9"
+
+      - name: Terraform Init
+        run: terraform init -input=false
+        env:
+          TENCENTCLOUD_SECRET_ID: ${{ secrets.TENCENTCLOUD_SECRET_ID }}
+          TENCENTCLOUD_SECRET_KEY: ${{ secrets.TENCENTCLOUD_SECRET_KEY }}
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -input=false -no-color
+        env:
+          TENCENTCLOUD_SECRET_ID: ${{ secrets.TENCENTCLOUD_SECRET_ID }}
+          TENCENTCLOUD_SECRET_KEY: ${{ secrets.TENCENTCLOUD_SECRET_KEY }}
+
+      - name: Terraform Apply
+        if: steps.plan.outcome == 'success'
+        run: terraform apply -auto-approve -input=false
+        env:
+          TENCENTCLOUD_SECRET_ID: ${{ secrets.TENCENTCLOUD_SECRET_ID }}
+          TENCENTCLOUD_SECRET_KEY: ${{ secrets.TENCENTCLOUD_SECRET_KEY }}

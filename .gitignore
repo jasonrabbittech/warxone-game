@@ -1,0 +1,23 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform/
+.terraform.lock.hcl
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# WorkBuddy
+.workbuddy/
+
+# Node (for future use)
+node_modules/
+
+# Generated images (keep resized icons only)
+game/icons/A_*.png

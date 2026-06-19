@@ -1,0 +1,1815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>WarXone - Earth & Mars Conquest</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        :root {
+            --neon-blue:#0ff0fc; --neon-pink:#ff00ff; --neon-green:#00ff9d; --neon-yellow:#f0ff00;
+            --neon-orange:#ff6600; --neon-red:#ff2200;
+            --dark-bg:#0a0a14; --darker-bg:#050510; --panel-bg:rgba(10,10,30,0.9);
+            --text-primary:#ffffff; --text-secondary:#b0b0d0;
+            --border-neon:1px solid var(--neon-blue);
+            --glow-blue:0 0 10px var(--neon-blue),0 0 20px rgba(0,240,252,0.3);
+            --glow-pink:0 0 10px var(--neon-pink),0 0 20px rgba(255,0,255,0.3);
+            --glow-green:0 0 10px var(--neon-green),0 0 20px rgba(0,255,157,0.3);
+            --glow-orange:0 0 10px var(--neon-orange),0 0 20px rgba(255,102,0,0.4);
+        }
+        html, body { width:100%; height:100%; overflow:hidden; position:fixed; }
+        body {
+            background-color:var(--dark-bg); color:var(--text-primary);
+            font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+            -webkit-font-smoothing:antialiased; touch-action:manipulation;
+            user-select:none; -webkit-user-select:none;
+        }
+        #game-container { width:100%; height:100%; position:relative; overflow:hidden; }
+        .screen { display:none; position:absolute; top:0; left:0; width:100%; height:100%; padding:20px; overflow-y:auto; -webkit-overflow-scrolling:touch; z-index:1; }
+        .screen.active { display:flex; flex-direction:column; z-index:10; }
+        .setup-form { max-width:500px; width:100%; margin:0 auto; padding:25px; background-color:var(--panel-bg); border:var(--border-neon); border-radius:10px; box-shadow:var(--glow-blue); }
+        .form-group { margin-bottom:18px; }
+        .form-group label { display:block; margin-bottom:6px; color:var(--neon-blue); font-size:0.9rem; }
+        .form-group input, .form-group select {
+            width:100%; padding:12px; font-size:1rem;
+            background-color:rgba(0,0,20,0.7); border:1px solid rgba(0,240,252,0.3);
+            border-radius:5px; color:var(--text-primary); -webkit-appearance:none;
+        }
+        .btn {
+            display:inline-block; padding:14px 22px; min-height:44px; min-width:44px;
+            background-color:rgba(0,240,252,0.1); border:var(--border-neon);
+            color:var(--neon-blue); font-size:1rem; cursor:pointer;
+            transition:all 0.2s; text-align:center; border-radius:5px;
+            -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+        }
+        .btn:active { transform:scale(0.96); background-color:rgba(0,240,252,0.3); }
+        .btn-small { padding:8px 14px; font-size:0.85rem; }
+        .btn-pink { border-color:var(--neon-pink); color:var(--neon-pink); background-color:rgba(255,0,255,0.1); }
+        .btn-green { border-color:var(--neon-green); color:var(--neon-green); background-color:rgba(0,255,157,0.1); }
+        .btn-orange { border-color:var(--neon-orange); color:var(--neon-orange); background-color:rgba(255,102,0,0.1); }
+        .btn-red { border-color:var(--neon-red); color:var(--neon-red); background-color:rgba(255,34,0,0.1); }
+        .btn:disabled { opacity:0.4; pointer-events:none; }
+        #main-menu { justify-content:center; align-items:center; background:radial-gradient(circle, rgba(10,10,40,0.95), #050510); z-index:100; }
+        .logo { font-size:3.5rem; margin-bottom:8px; background:linear-gradient(90deg, var(--neon-blue), var(--neon-pink)); -webkit-background-clip:text; background-clip:text; color:transparent; text-shadow:var(--glow-blue); letter-spacing:3px; }
+        .tagline { font-size:1.1rem; color:var(--text-secondary); margin-bottom:35px; text-align:center; }
+        .menu-buttons { display:flex; flex-direction:column; gap:12px; width:280px; max-width:90vw; }
+        .language-selector { position:absolute; top:15px; right:15px; z-index:10; }
+        .language-selector select { padding:8px 10px; background:var(--panel-bg); border:var(--border-neon); color:var(--neon-blue); border-radius:5px; font-size:0.85rem; }
+        #map-screen { background:var(--darker-bg); padding:0; }
+        .map-header { display:flex; justify-content:space-between; align-items:center; padding:10px 15px; background:rgba(10,10,30,0.95); border-bottom:var(--border-neon); z-index:10; flex-wrap:wrap; gap:6px; }
+        .player-info { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+        .info-item { display:flex; flex-direction:column; align-items:center; min-width:45px; }
+        .info-label { font-size:0.65rem; color:var(--text-secondary); }
+        .info-value { font-size:0.95rem; color:var(--neon-green); font-weight:bold; }
+        .flag-display { font-size:1.8rem; margin-right:4px; }
+        .map-container { flex:1; position:relative; overflow:hidden; background:radial-gradient(circle at 20% 30%, rgba(0,20,40,0.8), var(--darker-bg)); }
+        #map-svg { width:100%; height:100%; cursor:grab; touch-action:pan-x pan-y pinch-zoom; }
+        .country-path { stroke:rgba(255,255,255,0.35); stroke-width:1.5; fill:rgba(20,20,50,0.8); cursor:pointer; transition:fill 0.3s; }
+        .country-path.owned { fill:rgba(0,255,157,0.35); stroke:var(--neon-green); stroke-width:2.5; }
+        .country-path.adjacent { fill:rgba(240,255,0,0.35); stroke:var(--neon-yellow); stroke-width:2.5; }
+        .country-path.enemy { fill:rgba(255,0,255,0.2); stroke:var(--neon-pink); }
+        .country-path.mars-owned { fill:rgba(255,102,0,0.35); stroke:var(--neon-orange); stroke-width:2.5; }
+        .country-path.mars-adjacent { fill:rgba(255,102,0,0.25); stroke:var(--neon-orange); stroke-width:2.5; }
+        .country-path.mars-enemy { fill:rgba(255,34,0,0.2); stroke:var(--neon-red); }
+        .country-label { font-size:6px; fill:#fff; text-anchor:middle; pointer-events:none; text-shadow:1px 1px 2px black; }
+        .chest-icon { font-size:13px; pointer-events:none; }
+        .map-controls { position:absolute; bottom:15px; right:15px; display:flex; flex-direction:column; gap:6px; z-index:5; }
+        .map-btn { width:42px; height:42px; border-radius:50%; background:rgba(10,10,30,0.9); border:var(--border-neon); color:var(--neon-blue); font-size:1.2rem; cursor:pointer; display:flex; justify-content:center; align-items:center; }
+        .bottom-nav { display:flex; justify-content:space-around; padding:6px; background:rgba(10,10,30,0.95); border-top:var(--border-neon); z-index:10; }
+        .nav-btn { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 8px; background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:0.75rem; min-height:40px; }
+        .nav-btn.active { color:var(--neon-blue); }
+        .world-toggle { position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:15; display:flex; gap:5px; }
+        .world-toggle button { padding:6px 12px; font-size:0.8rem; border-radius:20px; }
+        .world-toggle button.active { background:var(--neon-orange); color:#fff; }
+        .back-to-map-btn { align-self:flex-start; margin-bottom:15px; }
+        #battlefield-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:500; flex-direction:column; justify-content:center; align-items:center; }
+        #battlefield-overlay.active { display:flex; }
+        .battlefield-container { width:92%; max-width:850px; background:var(--panel-bg); border:var(--border-neon); border-radius:12px; padding:18px; display:flex; flex-direction:column; gap:12px; }
+        .battlefield-title { text-align:center; font-size:1.4rem; color:var(--neon-pink); }
+        .battlefield-frontline { display:flex; align-items:center; justify-content:space-between; gap:8px; position:relative; padding:15px 0; }
+        .battlefield-side { flex:1; text-align:center; }
+        .battlefield-side h3 { font-size:1.1rem; margin-bottom:6px; }
+        .battlefield-side .pop { font-size:1.3rem; font-weight:bold; }
+        .battlefield-frontline-line { width:3px; height:100%; background:linear-gradient(to bottom, var(--neon-yellow), var(--neon-pink)); position:absolute; left:50%; transform:translateX(-50%); animation:pulse 1s infinite; }
+        @keyframes pulse { 0%,100% { box-shadow:0 0 8px var(--neon-yellow); } 50% { box-shadow:0 0 20px var(--neon-pink); } }
+        .battlefield-log { height:100px; overflow-y:auto; background:rgba(0,0,0,0.4); border-radius:8px; padding:8px; font-size:0.8rem; }
+        .battlefield-controls { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; }
+        .card-pack { width:180px; max-width:90%; padding:18px; background:var(--panel-bg); border:var(--border-neon); border-radius:10px; text-align:center; cursor:pointer; margin:0 auto; }
+        .cards-inventory { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr)); gap:12px; }
+        .card { padding:10px; background:var(--panel-bg); border-radius:8px; border:2px solid; }
+        .card.common { border-color:#808080; } .card.rare { border-color:#0070dd; } .card.super-rare { border-color:#a335ee; } .card.metropolis { border-color:#ff8000; } .card.mythic { border-color:#e6cc80; } .card.legendary { border-color:#ff0000; }
+        .card-rarity { font-size:0.7rem; text-align:center; margin-bottom:6px; padding:2px; border-radius:3px; }
+        .common .card-rarity { background:#808080; } .rare .card-rarity { background:#0070dd; } .super-rare .card-rarity { background:#a335ee; color:white; } .metropolis .card-rarity { background:#ff8000; } .mythic .card-rarity { background:#e6cc80; color:#000; } .legendary .card-rarity { background:#ff0000; }
+        .card-stats { display:flex; flex-direction:column; gap:5px; font-size:0.8rem; }
+        .connection-list { display:flex; flex-direction:column; gap:6px; }
+        .connection-item { background:var(--panel-bg); border:var(--border-neon); border-radius:5px; padding:8px 10px; display:flex; justify-content:space-between; align-items:center; }
+        .cancel-connection-btn { background:none; border:none; color:var(--neon-pink); font-size:1.2rem; cursor:pointer; padding:4px 8px; min-width:40px; min-height:40px; }
+        .notification { position:fixed; top:15px; right:15px; padding:10px 14px; background:var(--panel-bg); border:var(--border-neon); border-radius:5px; box-shadow:var(--glow-blue); z-index:1000; transform:translateX(120%); transition:transform 0.4s; max-width:260px; pointer-events:none; }
+        .notification.show { transform:translateX(0); }
+        #cooldown-timer-display { position:fixed; top:60px; left:50%; transform:translateX(-50%); padding:5px 12px; background:rgba(0,0,0,0.85); border:1px solid var(--neon-yellow); border-radius:5px; z-index:99; color:var(--neon-yellow); font-size:0.85rem; display:none; pointer-events:none; }
+        .pause-menu { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:150; justify-content:center; align-items:center; }
+        .pause-menu.active { display:flex; }
+        .pause-container { background:var(--panel-bg); border:var(--border-neon); border-radius:10px; padding:25px; text-align:center; max-width:90vw; }
+        #tutorial-modal, #story-modal, #mars-story-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:600; justify-content:center; align-items:center; }
+        #tutorial-modal.active, #story-modal.active, #mars-story-modal.active { display:flex; }
+        .tutorial-content, .story-content, .mars-story-content { background:var(--panel-bg); border:var(--border-neon); border-radius:10px; padding:22px; max-width:90vw; max-height:80vh; overflow-y:auto; color:var(--text-primary); }
+        .mars-story-content { border-color:var(--neon-orange); box-shadow:var(--glow-orange); }
+        .mars-story-content h2 { color:var(--neon-orange); }
+        .mobile-nav-toggle { display:none; position:fixed; bottom:12px; left:50%; transform:translateX(-50%); z-index:300; background:var(--panel-bg); border:var(--border-neon); border-radius:30px; padding:8px 18px; color:var(--neon-blue); cursor:pointer; font-size:0.9rem; }
+        @media (max-width:768px) { .logo { font-size:2.5rem; } .bottom-nav { display:none; } .mobile-nav-toggle { display:block; } }
+    </style>
+</head>
+<body>
+<div id="game-container">
+    <div id="notification" class="notification"><div class="notification-title"></div><div class="notification-message"></div></div>
+    <div id="cooldown-timer-display">Cooldown: <span id="cooldown-timer-value">30</span>s</div>
+
+    <!-- Tutorial Modal -->
+    <div id="tutorial-modal"><div class="tutorial-content"><h2 id="tutorial-title">How to Play</h2><p id="tutorial-text"></p><button class="btn" data-action="tutorial-close">Close</button></div></div>
+
+    <!-- Story Modal -->
+    <div id="story-modal"><div class="story-content"><h2>WARXONE: CONQUER OR FALL</h2><p><strong>Prologue – The Day the Concord Died</strong></p><p>For ten years, the Concord kept the peace. Every country was ranked. Every resource tracked. Every border respected.</p><p>Then came The Cracking. A single line of corrupted code spread through the Concord's core. Borders became suggestions. Armies became digital tokens.</p><p>The Concord was never built for peace. It was built to find the person ruthless enough to break it.</p><p>You are that person.</p><p><strong>"Welcome to WarXone. Declare war. Conquer countries. No limits."</strong></p><button class="btn" data-action="story-close">Begin Your Conquest</button></div></div>
+
+    <!-- Mars Discovery Story Modal -->
+    <div id="mars-story-modal"><div class="mars-story-content">
+        <h2>⚠️ MARS DISCOVERED ⚠️</h2>
+        <p><strong>Part 7 – The Red Signal</strong></p>
+        <p>With Earth nearly under your control, a deep-space transmission is intercepted. It's a challenge from the Martian Colonial Authority — 50 sovereign nations, united under one banner, daring you to conquer the Red Planet.</p>
+        <p>"You've taken Earth. But can you survive Mars?"</p>
+        <p>The Martian nations have formed the <strong>Red Concord</strong> — an alliance specifically designed to counter your tactics. Each nation is fortified with advanced technology, harsh terrain, and a burning hatred for Earth's conqueror.</p>
+        <p>Mars is colder. Deadlier. And waiting.</p>
+        <p><strong>New objective: Conquer all 50 Martian nations.</strong></p>
+        <button class="btn btn-orange" data-action="mars-story-accept">Accept the Challenge</button>
+        <button class="btn" data-action="mars-story-skip" style="margin-top:8px;">Skip (Go to Mars Later)</button>
+    </div></div>
+
+    <!-- Main Menu -->
+    <div id="main-menu" class="screen active">
+        <div class="language-selector"><select id="language-select"><option value="en">English</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="it">Italiano</option><option value="pt">Português</option><option value="ru">Русский</option><option value="ja">日本語</option><option value="ko">한국어</option><option value="zh">中文</option></select></div>
+        <div class="logo">WARXONE</div><div class="tagline">Conquer Earth & Mars</div>
+        <div class="menu-buttons">
+            <button class="btn" data-action="new-game">New Game</button>
+            <button class="btn" data-action="load-game">Load Game</button>
+            <button class="btn btn-pink" data-action="story">The Story</button>
+            <button class="btn" data-action="settings">Settings</button>
+            <button class="btn btn-green" data-action="how-to-play">How to Play</button>
+        </div>
+    </div>
+
+    <!-- Signup -->
+    <div id="signup-screen" class="screen"><div class="setup-form"><h1 style="text-align:center;color:var(--neon-blue);">Sign Up</h1><div class="form-group"><label>Email</label><input type="email" id="signup-email" placeholder="your@email.com"></div><div class="form-group"><label>Password (min 8)</label><input type="password" id="signup-password" placeholder="min 8 characters" minlength="8"></div><div class="form-group"><label>Confirm Password</label><input type="password" id="signup-confirm-password" placeholder="confirm password"></div><button class="btn" data-action="signup" style="width:100%;margin-top:15px;">Sign Up</button><button class="btn btn-pink" data-action="back-to-menu" style="width:100%;margin-top:10px;">Back to Menu</button></div></div>
+
+    <!-- Setup -->
+    <div id="setup-screen" class="screen"><div class="setup-form"><h1 style="text-align:center;color:var(--neon-blue);">Setup Your Country</h1><div class="form-group"><label>Country Name</label><input type="text" id="country-name" placeholder="My Nation" maxlength="20"></div><div class="form-group"><label>Capital Name</label><input type="text" id="capital-name" placeholder="Capital City" maxlength="20"></div><div class="form-group"><label>Flag</label><select id="flag-select"><option value="🇫🇷">🇫🇷 France</option><option value="🇩🇪">🇩🇪 Germany</option><option value="🇬🇧">🇬🇧 UK</option><option value="🇪🇸">🇪🇸 Spain</option><option value="🇮🇹">🇮🇹 Italy</option><option value="🇷🇺">🇷🇺 Russia</option><option value="🇺🇸">🇺🇸 USA</option><option value="🇨🇳">🇨🇳 China</option></select></div><div class="form-group"><label>Starting Country</label><select id="starting-country"></select></div><button class="btn" data-action="start-game" style="width:100%;">Start Game</button><button class="btn btn-pink" data-action="back-to-menu" style="width:100%;margin-top:10px;">Back to Menu</button></div></div>
+
+    <!-- Map Screen -->
+    <div id="map-screen" class="screen">
+        <div class="map-header">
+            <div class="player-info">
+                <span class="flag-display" id="player-flag">🇫🇷</span>
+                <div class="info-item"><div class="info-label">Tokens</div><div class="info-value" id="token-count">10</div></div>
+                <div class="info-item"><div class="info-label">Pop</div><div class="info-value" id="population-count">20k</div></div>
+                <div class="info-item"><div class="info-label">Lvl</div><div class="info-value" id="level-count">1</div></div>
+                <div class="info-item"><div class="info-label">Land</div><div class="info-value" id="territory-count">1</div></div>
+                <div class="info-item"><div class="info-label">Conns</div><div class="info-value" id="connection-count">0</div></div>
+                <div class="info-item"><div class="info-label">🌍%</div><div class="info-value" id="earth-percent">0%</div></div>
+            </div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                <button class="btn btn-small" data-action="quiz">Quiz</button>
+                <button class="btn btn-green btn-small" data-action="collect-income">Collect</button>
+                <button class="btn btn-small" data-action="pause">Pause</button>
+            </div>
+        </div>
+        <div class="world-toggle" id="world-toggle">
+            <button class="btn-small active" data-action="world-earth">🌍 Earth</button>
+            <button class="btn-small btn-orange" data-action="world-mars">🔴 Mars</button>
+        </div>
+        <div class="map-container" id="map-container">
+            <svg id="map-svg" viewBox="0 0 2400 1600"></svg>
+            <div class="map-controls">
+                <button class="map-btn" data-action="zoom-in">+</button>
+                <button class="map-btn" data-action="zoom-out">-</button>
+                <button class="map-btn" data-action="reset-view">↺</button>
+            </div>
+        </div>
+        <div class="bottom-nav" id="desktop-nav">
+            <button class="nav-btn active" data-screen="map">🗺️ Map</button>
+            <button class="nav-btn" data-screen="card">🃏 Shop</button>
+            <button class="nav-btn" data-screen="connection">🔗 Connect</button>
+            <button class="nav-btn" data-screen="alliance">🤝 Alliance</button>
+            <button class="nav-btn" data-screen="settings">⚙️ Settings</button>
+        </div>
+        <div class="mobile-nav-toggle" id="mobile-nav-toggle">☰ Menu</div>
+    </div>
+
+    <!-- Card Shop -->
+    <div id="card-screen" class="screen"><div style="max-width:900px;margin:0 auto;width:100%;"><button class="btn btn-small back-to-map-btn" data-action="back-to-map">← Back</button><h1 style="color:var(--neon-blue);">Card Shop</h1><div class="card-pack" data-action="buy-pack"><div style="font-size:3rem;">🃏</div><div>Basic Pack</div><div style="color:var(--neon-yellow);">5 Tokens</div></div><div style="margin-top:20px;background:var(--panel-bg);border:var(--border-neon);border-radius:10px;padding:18px;"><h3 style="color:var(--neon-yellow);">Gift Code</h3><input type="text" id="gift-code-input" placeholder="Enter code" style="width:100%;padding:10px;background:#111;border:1px solid var(--neon-blue);color:#fff;border-radius:5px;"><button class="btn" data-action="redeem-code" style="width:100%;margin-top:8px;">Redeem</button></div><h2 style="color:var(--neon-blue);margin-top:20px;">Your Cards</h2><div class="cards-inventory" id="cards-inventory"></div></div></div>
+
+    <!-- Connection Screen -->
+    <div id="connection-screen" class="screen"><div style="max-width:750px;margin:0 auto;width:100%;"><button class="btn btn-small back-to-map-btn" data-action="back-to-map">← Back</button><h1 style="color:var(--neon-blue);">Connections</h1><p style="color:var(--text-secondary);margin-bottom:12px;">Pair infrastructure with adjacent countries.</p><div id="active-connections"><h3>Active</h3><div class="connection-list" id="connection-list"></div></div><div style="background:var(--panel-bg);border:var(--border-neon);border-radius:10px;padding:18px;margin-top:18px;"><h3>New Connection</h3><div class="form-group"><label>Card</label><select id="connect-card-select"></select></div><div class="form-group"><label>Country</label><select id="connect-country-select"></select></div><div class="form-group"><label>Type</label><select id="connect-type-select"><option value="airports">Airport</option><option value="trains">Train</option><option value="military">Military</option></select></div><button class="btn" data-action="create-connection" style="width:100%;">Create</button><div id="connect-feedback" style="margin-top:6px;font-size:0.8rem;color:var(--text-secondary);"></div></div><button class="btn btn-green" data-action="collect-income2" style="margin-top:12px;">Collect Daily Income</button></div></div>
+
+    <!-- Alliance -->
+    <div id="alliance-screen" class="screen"><div style="max-width:650px;margin:0 auto;width:100%;"><button class="btn btn-small back-to-map-btn" data-action="back-to-map">← Back</button><h1 style="color:var(--neon-green);">Alliance</h1><div id="current-alliance"><p>Not in an alliance.</p><button class="btn" data-action="create-alliance">Create (50 tokens)</button></div><div id="alliance-list" style="margin-top:20px;"></div></div></div>
+
+    <!-- Quiz -->
+    <div id="quiz-screen" class="screen"><div class="setup-form"><button class="btn btn-small back-to-map-btn" data-action="back-to-map">← Back</button><h2 style="color:var(--neon-blue);">Quiz</h2><div id="quiz-intro"><p>4 questions. 1 token each.</p><button class="btn" data-action="start-quiz">Start</button></div><div id="quiz-question" style="display:none;"><div>Q<span id="quiz-current"></span>/4</div><div id="quiz-question-text"></div><div id="quiz-options"></div></div><div id="quiz-result" style="display:none;"><h2>Done</h2><p>Correct: <span id="quiz-correct-count"></span></p><p>Tokens: <span id="quiz-tokens-earned"></span></p><button class="btn" data-action="back-to-map">Back</button></div></div></div>
+
+    <!-- Settings -->
+    <div id="settings-screen" class="screen"><div style="max-width:450px;margin:0 auto;width:100%;"><button class="btn btn-small back-to-map-btn" data-action="back-to-map">← Back</button><h1 style="color:var(--neon-blue);">Settings</h1><div style="display:flex;flex-direction:column;gap:8px;margin-top:18px;"><button class="btn" data-action="save-game">Save</button><button class="btn btn-pink" data-action="reset-game">Reset</button><button class="btn btn-green" data-action="export-save">Export</button><button class="btn" data-action="import-save">Import</button></div></div></div>
+
+    <!-- Pause Menu -->
+    <div id="pause-menu" class="pause-menu"><div class="pause-container"><h2 style="color:var(--neon-pink);margin-bottom:18px;">Paused</h2><button class="btn" data-action="resume">Resume</button><button class="btn btn-pink" data-action="quit" style="margin-top:8px;">Quit</button></div></div>
+
+    <!-- Battlefield Overlay -->
+    <div id="battlefield-overlay"><div class="battlefield-container"><div class="battlefield-title">⚔️ BATTLEFIELD ⚔️</div><div class="battlefield-frontline"><div class="battlefield-side"><h3 id="battle-attacker-name">You</h3><div class="pop" id="battle-attacker-pop">20k</div></div><div class="battlefield-frontline-line"></div><div class="battlefield-side"><h3 id="battle-defender-name">Enemy</h3><div class="pop" id="battle-defender-pop">20k</div></div></div><div class="battlefield-log" id="battlefield-log"></div><div class="battlefield-controls"><button class="btn" data-action="auto-battle">Auto</button><button class="btn btn-pink" data-action="retreat">Retreat</button><button class="btn" data-action="close-battlefield">Close</button></div></div></div>
+</div>
+<script>
+// ==================== SOUND ENGINE ====================
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+const soundCtx = new AudioCtx();
+function playTone(freq, type, duration, vol=0.3) {
+    const osc = soundCtx.createOscillator();
+    const gain = soundCtx.createGain();
+    osc.type = type; osc.frequency.setValueAtTime(freq, soundCtx.currentTime);
+    gain.gain.setValueAtTime(vol, soundCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, soundCtx.currentTime + duration);
+    osc.connect(gain); gain.connect(soundCtx.destination);
+    osc.start(); osc.stop(soundCtx.currentTime + duration);
+}
+const SFX = {
+    battleStart: () => { playTone(220, 'sawtooth', 0.5); setTimeout(()=>playTone(330,'square',0.3),100); },
+    victory: () => { playTone(523, 'triangle', 0.2); setTimeout(()=>playTone(659,'triangle',0.2),150); },
+    defeat: () => { playTone(200, 'sawtooth', 0.5); },
+    cardOpen: () => { for(let i=0;i<3;i++) setTimeout(()=>playTone(800+Math.random()*400,'sine',0.1), i*60); },
+    notification: () => playTone(880, 'sine', 0.1),
+    levelUp: () => playTone(440, 'triangle', 0.2),
+    buttonClick: () => playTone(600, 'sine', 0.05),
+    error: () => playTone(150, 'square', 0.2),
+    marsDiscovered: () => { playTone(110, 'sawtooth', 1.5); setTimeout(()=>{ playTone(165,'triangle',0.8); playTone(220,'square',0.6); }, 500); }
+};
+
+// ==================== TRANSLATIONS (abbreviated – all 10 languages) ====================
+const translations = {
+    en: {
+        mainMenu: { title:"WARXONE", tagline:"Conquer Earth & Mars", newGame:"New Game", loadGame:"Load Game", story:"The Story", settings:"Settings", howToPlay:"How to Play" },
+        signup: { title:"Sign Up", email:"Email", password:"Password (min 8)", confirm:"Confirm Password", btn:"Sign Up", back:"Back to Menu" },
+        setup: { title:"Setup Your Country", countryName:"Country Name", capitalName:"Capital Name", flag:"Flag", startingCountry:"Starting Country", startBtn:"Start Game", backBtn:"Back to Menu" },
+        map: { tokens:"Tokens", pop:"Pop", lvl:"Lvl", land:"Land", conns:"Conns", earthPercent:"🌍%", quiz:"Quiz", collect:"Collect", pause:"Pause" },
+        tutorial: { title:"How to Play", text:"1. Sign up for 10 tokens.\n2. Choose a country and conquer.\n3. Attack adjacent countries (yellow).\n4. Win battles for tokens & chests (🧰).\n5. Collect cards from the Shop.\n6. Establish Connections for daily tokens.\n7. Join alliances.\n8. Take the History Quiz.\n9. Conquer 90% of Earth to unlock Mars!" },
+        battle: { title:"BATTLEFIELD", attacker:"You", defender:"Enemy", auto:"Auto", retreat:"Retreat", close:"Close" },
+        card: { title:"Card Shop", basic:"Basic Pack", cost:"5 Tokens", redeem:"Redeem", yourCards:"Your Cards" },
+        connection: { title:"Connections" },
+        alliance: { title:"Alliance" },
+        quiz: { title:"History Quiz" },
+        settings: { title:"Settings", save:"Save", reset:"Reset", export:"Export", import:"Import" }
+    },
+    es: { mainMenu: { title:"WARZONE", tagline:"Conquista Tierra y Marte", newGame:"Nuevo Juego", loadGame:"Cargar", story:"La Historia", settings:"Ajustes", howToPlay:"Cómo jugar" }, signup: { title:"Registro", email:"Correo", password:"Contraseña (mín 8)", confirm:"Confirmar", btn:"Registrarse", back:"Volver al Menú" }, setup: { title:"Configurar País", countryName:"Nombre del País", capitalName:"Capital", flag:"Bandera", startingCountry:"País inicial", startBtn:"Empezar", backBtn:"Volver al Menú" }, map: { tokens:"Fichas", pop:"Población", lvl:"Nivel", land:"Tierras", conns:"Conex", earthPercent:"🌍%", quiz:"Quiz", collect:"Recoger", pause:"Pausa" }, tutorial: { title:"Cómo Jugar", text:"1. Regístrate para obtener 10 fichas.\n2. Elige un país y conquista.\n3. Ataca países adyacentes (amarillo).\n4. Gana batallas para fichas y cofres (🧰).\n5. Compra cartas en la Tienda.\n6. Crea Conexiones para fichas diarias.\n7. Únete a alianzas.\n8. Responde el Quiz de Historia.\n9. ¡Conquista el 90% de la Tierra para desbloquear Marte!" }, battle: { title:"BATALLA", attacker:"Tú", defender:"Enemigo", auto:"Automático", retreat:"Retirada", close:"Cerrar" }, card: { title:"Tienda", basic:"Paquete Básico", cost:"5 Fichas", redeem:"Canjear", yourCards:"Tus Cartas" }, connection: { title:"Conexiones" }, alliance: { title:"Alianza" }, quiz: { title:"Quiz de Historia" }, settings: { title:"Ajustes", save:"Guardar", reset:"Resetear", export:"Exportar", import:"Importar" } },
+    fr: { mainMenu: { title:"WARZONE", tagline:"Conquérez Terre & Mars", newGame:"Nouveau", loadGame:"Charger", story:"L'Histoire", settings:"Paramètres", howToPlay:"Comment jouer" }, signup: { title:"Inscription", email:"Email", password:"Mot de passe", confirm:"Confirmer", btn:"S'inscrire", back:"Retour au Menu" }, setup: { title:"Pays", countryName:"Nom", capitalName:"Capitale", flag:"Drapeau", startingCountry:"Pays départ", startBtn:"Jouer", backBtn:"Retour au Menu" }, map: { tokens:"Jetons", pop:"Pop", lvl:"Niv", land:"Terres", conns:"Conn", earthPercent:"🌍%", quiz:"Quiz", collect:"Revenu", pause:"Pause" }, tutorial: { title:"Comment jouer", text:"1. Inscrivez-vous (10 jetons).\n2. Choisissez un pays et conquérez.\n3. Attaquez les pays adjacents (jaune).\n4. Gagnez des batailles, ouvrez des coffres.\n5. Achetez des cartes.\n6. Créez des connexions.\n7. Alliances.\n8. Quiz d'Histoire.\n9. Conquérez 90% de la Terre pour débloquer Mars!" }, battle: { title:"BATAILLE", attacker:"Vous", defender:"Ennemi", auto:"Auto", retreat:"Retraite", close:"Fermer" }, card: { title:"Boutique", basic:"Paquet de base", cost:"5 Jetons", redeem:"Échanger", yourCards:"Vos cartes" }, connection: { title:"Connexions" }, alliance: { title:"Alliance" }, quiz: { title:"Quiz" }, settings: { title:"Paramètres", save:"Sauver", reset:"Réinit.", export:"Exporter", import:"Importer" } },
+    de: { mainMenu: { title:"WARZONE", tagline:"Erobere Erde & Mars", newGame:"Neues Spiel", loadGame:"Laden", story:"Die Geschichte", settings:"Einstellungen", howToPlay:"Anleitung" }, signup: { title:"Anmeldung", email:"E-Mail", password:"Passwort", confirm:"Bestätigen", btn:"Anmelden", back:"Zurück zum Menü" }, setup: { title:"Land einrichten", countryName:"Landesname", capitalName:"Hauptstadt", flag:"Flagge", startingCountry:"Startland", startBtn:"Spiel starten", backBtn:"Zurück zum Menü" }, map: { tokens:"Tokens", pop:"Bev", lvl:"Lvl", land:"Land", conns:"Verb", earthPercent:"🌍%", quiz:"Quiz", collect:"Einkommen", pause:"Pause" }, tutorial: { title:"Anleitung", text:"1. Anmelden → 10 Tokens.\n2. Land wählen und angreifen.\n3. Nur angrenzende Länder angreifen (gelb).\n4. Gewinne bringen Tokens + Schatztruhen.\n5. Karten kaufen.\n6. Verbindungen erstellen.\n7. Allianzen beitreten.\n8. Geschichte-Quiz.\n9. Erobere 90% der Erde, um Mars freizuschalten!" }, battle: { title:"SCHLACHT", attacker:"Du", defender:"Feind", auto:"Auto", retreat:"Rückzug", close:"Schließen" }, card: { title:"Kartenladen", basic:"Basispaket", cost:"5 Tokens", redeem:"Einlösen", yourCards:"Deine Karten" }, connection: { title:"Verbindungen" }, alliance: { title:"Allianz" }, quiz: { title:"Quiz" }, settings: { title:"Einstellungen", save:"Speichern", reset:"Zurücksetzen", export:"Exportieren", import:"Importieren" } },
+    it: { mainMenu: { title:"WARZONE", tagline:"Conquista Terra & Marte", newGame:"Nuova Partita", loadGame:"Carica", story:"La Storia", settings:"Impostazioni", howToPlay:"Come giocare" }, signup: { title:"Registrati", email:"Email", password:"Password", confirm:"Conferma", btn:"Registrati", back:"Torna al Menu" }, setup: { title:"Crea Nazione", countryName:"Nome", capitalName:"Capitale", flag:"Bandiera", startingCountry:"Nazione iniziale", startBtn:"Inizia", backBtn:"Torna al Menu" }, map: { tokens:"Gettoni", pop:"Pop", lvl:"Liv", land:"Terre", conns:"Conn", earthPercent:"🌍%", quiz:"Quiz", collect:"Raccogli", pause:"Pausa" }, tutorial: { title:"Come giocare", text:"1. Registrati (10 gettoni).\n2. Scegli un paese e conquista.\n3. Attacca i paesi confinanti (giallo).\n4. Vinci battaglie, ottieni forzieri.\n5. Compra carte.\n6. Crea connessioni.\n7. Alleanze.\n8. Quiz di storia.\n9. Conquista il 90% della Terra per sbloccare Marte!" }, battle: { title:"BATTAGLIA", attacker:"Tu", defender:"Nemico", auto:"Auto", retreat:"Ritirata", close:"Chiudi" }, card: { title:"Negozio", basic:"Pacchetto Base", cost:"5 Gettoni", redeem:"Riscatta", yourCards:"Le tue carte" }, connection: { title:"Connessioni" }, alliance: { title:"Alleanza" }, quiz: { title:"Quiz" }, settings: { title:"Impostazioni", save:"Salva", reset:"Resetta", export:"Esporta", import:"Importa" } },
+    pt: { mainMenu: { title:"WARZONE", tagline:"Conquiste Terra & Marte", newGame:"Novo Jogo", loadGame:"Carregar", story:"A História", settings:"Configurações", howToPlay:"Como Jogar" }, signup: { title:"Inscrever-se", email:"Email", password:"Senha (mín 8)", confirm:"Confirmar Senha", btn:"Inscrever", back:"Voltar ao Menu" }, setup: { title:"Configurar País", countryName:"Nome do País", capitalName:"Capital", flag:"Bandeira", startingCountry:"País Inicial", startBtn:"Começar", backBtn:"Voltar ao Menu" }, map: { tokens:"Fichas", pop:"Pop", lvl:"Nvl", land:"Terras", conns:"Conex", earthPercent:"🌍%", quiz:"Quiz", collect:"Coletar", pause:"Pausa" }, tutorial: { title:"Como Jogar", text:"1. Inscreva-se para ganhar 10 fichas.\n2. Escolha um país e conquiste.\n3. Ataque países adjacentes (amarelo).\n4. Vença batalhas por fichas e baús.\n5. Compre cartas na Loja.\n6. Estabeleça Conexões.\n7. Alie-se a outros.\n8. Faça o Quiz de História.\n9. Conquiste 90% da Terra para desbloquear Marte!" }, battle: { title:"BATALHA", attacker:"Você", defender:"Inimigo", auto:"Auto", retreat:"Recuar", close:"Fechar" }, card: { title:"Loja", basic:"Pacote Básico", cost:"5 Fichas", redeem:"Resgatar", yourCards:"Suas Cartas" }, connection: { title:"Conexões" }, alliance: { title:"Aliança" }, quiz: { title:"Quiz" }, settings: { title:"Configurações", save:"Salvar", reset:"Resetar", export:"Exportar", import:"Importar" } },
+    ru: { mainMenu: { title:"WARZONE", tagline:"Завоюй Землю и Марс", newGame:"Новая игра", loadGame:"Загрузить", story:"История", settings:"Настройки", howToPlay:"Как играть" }, signup: { title:"Регистрация", email:"Email", password:"Пароль (мин 8)", confirm:"Подтвердите", btn:"Зарегистр.", back:"Вернуться в меню" }, setup: { title:"Создать страну", countryName:"Название", capitalName:"Столица", flag:"Флаг", startingCountry:"Начальная страна", startBtn:"Начать", backBtn:"Вернуться в меню" }, map: { tokens:"Жетоны", pop:"Нас.", lvl:"Ур.", land:"Земли", conns:"Связи", earthPercent:"🌍%", quiz:"Викторина", collect:"Доход", pause:"Пауза" }, tutorial: { title:"Как играть", text:"1. Зарегистрируйтесь (10 жетонов).\n2. Выберите страну и завоёвывайте.\n3. Атакуйте соседние страны (жёлтые).\n4. Побеждайте, получайте сундуки.\n5. Покупайте карты.\n6. Создавайте связи.\n7. Альянсы.\n8. Историческая викторина.\n9. Завоюйте 90% Земли, чтобы открыть Марс!" }, battle: { title:"БИТВА", attacker:"Вы", defender:"Враг", auto:"Авто", retreat:"Отступ.", close:"Закрыть" }, card: { title:"Магазин", basic:"Базовый набор", cost:"5 жетонов", redeem:"Активировать", yourCards:"Ваши карты" }, connection: { title:"Связи" }, alliance: { title:"Альянс" }, quiz: { title:"Викторина" }, settings: { title:"Настройки", save:"Сохранить", reset:"Сброс", export:"Экспорт", import:"Импорт" } },
+    ja: { mainMenu: { title:"ウォーゾーン", tagline:"地球と火星を征服せよ", newGame:"新規ゲーム", loadGame:"ロード", story:"物語", settings:"設定", howToPlay:"遊び方" }, signup: { title:"サインアップ", email:"メール", password:"パスワード", confirm:"確認", btn:"登録", back:"メニューに戻る" }, setup: { title:"国の設定", countryName:"国名", capitalName:"首都", flag:"国旗", startingCountry:"開始国", startBtn:"開始", backBtn:"メニューに戻る" }, map: { tokens:"トークン", pop:"人口", lvl:"Lv", land:"領土", conns:"接続", earthPercent:"🌍%", quiz:"クイズ", collect:"収入", pause:"一時停止" }, tutorial: { title:"遊び方", text:"1. 登録して10トークン入手。\n2. 国を選び征服開始。\n3. 隣接国を攻撃（黄色）。\n4. 戦闘勝利でトークンと宝箱。\n5. カード購入。\n6. 接続で毎日収入。\n7. 同盟に参加。\n8. 歴史クイズ。\n9. 地球の90%を征服して火星を解放！" }, battle: { title:"戦場", attacker:"あなた", defender:"敵", auto:"自動", retreat:"撤退", close:"閉じる" }, card: { title:"カードショップ", basic:"基本パック", cost:"5トークン", redeem:"交換", yourCards:"保有カード" }, connection: { title:"接続" }, alliance: { title:"同盟" }, quiz: { title:"クイズ" }, settings: { title:"設定", save:"保存", reset:"リセット", export:"エクスポート", import:"インポート" } },
+    ko: { mainMenu: { title:"워존", tagline:"지구와 화성을 정복하라", newGame:"새 게임", loadGame:"불러오기", story:"스토리", settings:"설정", howToPlay:"게임 방법" }, signup: { title:"가입", email:"이메일", password:"비밀번호", confirm:"확인", btn:"가입", back:"메뉴로 돌아가기" }, setup: { title:"국가 설정", countryName:"국가명", capitalName:"수도", flag:"국기", startingCountry:"시작 국가", startBtn:"시작", backBtn:"메뉴로 돌아가기" }, map: { tokens:"토큰", pop:"인구", lvl:"레벨", land:"영토", conns:"연결", earthPercent:"🌍%", quiz:"퀴즈", collect:"수입", pause:"일시정지" }, tutorial: { title:"게임 방법", text:"1. 가입 후 토큰 10개 획득.\n2. 국가를 선택하고 정복.\n3. 인접 국가 공격 (노란색).\n4. 전투 승리로 토큰과 보물 상자.\n5. 카드 구매.\n6. 연결로 매일 수입.\n7. 동맹 가입.\n8. 역사 퀴즈.\n9. 지구의 90%를 정복하여 화성을 잠금 해제!" }, battle: { title:"전장", attacker:"당신", defender:"적", auto:"자동", retreat:"후퇴", close:"닫기" }, card: { title:"카드 상점", basic:"기본 팩", cost:"5 토큰", redeem:"교환", yourCards:"보유 카드" }, connection: { title:"연결" }, alliance: { title:"동맹" }, quiz: { title:"퀴즈" }, settings: { title:"설정", save:"저장", reset:"초기화", export:"내보내기", import:"가져오기" } },
+    zh: { mainMenu: { title:"战争地带", tagline:"征服地球与火星", newGame:"新游戏", loadGame:"加载游戏", story:"故事", settings:"设置", howToPlay:"如何玩" }, signup: { title:"注册", email:"邮箱", password:"密码 (至少8位)", confirm:"确认密码", btn:"注册", back:"返回菜单" }, setup: { title:"设置国家", countryName:"国家名称", capitalName:"首都名称", flag:"国旗", startingCountry:"起始国家", startBtn:"开始游戏", backBtn:"返回菜单" }, map: { tokens:"代币", pop:"人口", lvl:"等级", land:"领土", conns:"连接", earthPercent:"🌍%", quiz:"测验", collect:"收集", pause:"暂停" }, tutorial: { title:"如何玩", text:"1. 注册获得10个代币。\n2. 选择国家并开始征服。\n3. 攻击相邻国家（黄色）。\n4. 赢得战斗获得代币和宝箱(🧰)。\n5. 在商店收集卡牌。\n6. 建立连接每日获得代币。\n7. 加入联盟。\n8. 参加历史测验。\n9. 征服地球90%以解锁火星！" }, battle: { title:"战场", attacker:"你", defender:"敌人", auto:"自动", retreat:"撤退", close:"关闭" }, card: { title:"卡牌商店", basic:"基础卡包", cost:"5代币", redeem:"兑换", yourCards:"你的卡牌" }, connection: { title:"连接" }, alliance: { title:"联盟" }, quiz: { title:"历史测验" }, settings: { title:"设置", save:"保存", reset:"重置", export:"导出", import:"导入" } }
+};
+
+// ==================== GAME STATE – 75+ Earth Countries ====================
+const GameState = {
+    player: {
+        email:"", signedUp:false, countryName:"Ironhaven", capitalName:"Fortress", flag:"🇫🇷", startingCountry:"france",
+        tokens:10, population:20000, level:1, territories:[], cards:[], alliance:null,
+        createdAt:null, quizTaken:false, language:"en", marsUnlocked:false, currentWorld:"earth"
+    },
+    countries: {
+        // EUROPE
+        france: { name:"France", pop:20000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["spain","germany","italy","belgium","switzerland","luxembourg","andorra"], world:"earth" },
+        germany: { name:"Germany", pop:20000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["france","poland","czech","austria","switzerland","belgium","netherlands","denmark"], world:"earth" },
+        spain: { name:"Spain", pop:18000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["france","portugal","andorra"], world:"earth" },
+        italy: { name:"Italy", pop:19000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["france","austria","switzerland","slovenia","croatia","san_marino","vatican"], world:"earth" },
+        poland: { name:"Poland", pop:17000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["germany","czech","slovakia","ukraine","lithuania","belarus","kaliningrad"], world:"earth" },
+        ukraine: { name:"Ukraine", pop:21000, level:1, owner:"ai", military:2, airports:1, trains:1, adjacent:["poland","slovakia","hungary","romania","moldova","belarus","russia"], world:"earth" },
+        uk: { name:"United Kingdom", pop:22000, level:1, owner:"ai", military:1, airports:2, trains:1, adjacent:["france","ireland"], world:"earth" },
+        russia: { name:"Russia", pop:144000, level:1, owner:"ai", military:5, airports:3, trains:3, adjacent:["ukraine","belarus","finland","norway","estonia","latvia","lithuania","poland","georgia","azerbaijan","kazakhstan","china","mongolia","north_korea"], world:"earth" },
+        sweden: { name:"Sweden", pop:15000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["norway","finland","denmark"], world:"earth" },
+        norway: { name:"Norway", pop:14000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["sweden","finland","russia"], world:"earth" },
+        finland: { name:"Finland", pop:5500, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["sweden","norway","russia"], world:"earth" },
+        denmark: { name:"Denmark", pop:5800, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["germany","sweden"], world:"earth" },
+        netherlands: { name:"Netherlands", pop:17000, level:1, owner:"ai", military:1, airports:1, trains:2, adjacent:["belgium","germany"], world:"earth" },
+        belgium: { name:"Belgium", pop:11000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["france","netherlands","germany","luxembourg"], world:"earth" },
+        switzerland: { name:"Switzerland", pop:8000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["france","germany","austria","italy","liechtenstein"], world:"earth" },
+        austria: { name:"Austria", pop:9000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["germany","czech","slovakia","hungary","slovenia","italy","switzerland","liechtenstein"], world:"earth" },
+        czech: { name:"Czechia", pop:10000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["germany","poland","slovakia","austria"], world:"earth" },
+        slovakia: { name:"Slovakia", pop:5000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["czech","poland","ukraine","hungary","austria"], world:"earth" },
+        hungary: { name:"Hungary", pop:10000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["slovakia","ukraine","romania","serbia","croatia","slovenia","austria"], world:"earth" },
+        romania: { name:"Romania", pop:19000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["hungary","ukraine","moldova","bulgaria","serbia"], world:"earth" },
+        bulgaria: { name:"Bulgaria", pop:7000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["romania","serbia","north_macedonia","greece","turkey"], world:"earth" },
+        serbia: { name:"Serbia", pop:8000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["hungary","romania","bulgaria","north_macedonia","kosovo","montenegro","bosnia","croatia"], world:"earth" },
+        croatia: { name:"Croatia", pop:4000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["slovenia","hungary","serbia","bosnia"], world:"earth" },
+        bosnia: { name:"Bosnia & Herz.", pop:3000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["croatia","serbia","montenegro"], world:"earth" },
+        albania: { name:"Albania", pop:3000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["montenegro","kosovo","north_macedonia","greece"], world:"earth" },
+        north_macedonia: { name:"North Macedonia", pop:2000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["kosovo","serbia","bulgaria","greece","albania"], world:"earth" },
+        greece: { name:"Greece", pop:16000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["albania","north_macedonia","bulgaria","turkey"], world:"earth" },
+        portugal: { name:"Portugal", pop:10000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["spain"], world:"earth" },
+        ireland: { name:"Ireland", pop:5000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["uk"], world:"earth" },
+        moldova: { name:"Moldova", pop:2600, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["romania","ukraine"], world:"earth" },
+        estonia: { name:"Estonia", pop:1300, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["russia","latvia"], world:"earth" },
+        latvia: { name:"Latvia", pop:1900, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["estonia","russia","lithuania","belarus"], world:"earth" },
+        lithuania: { name:"Lithuania", pop:2700, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["latvia","belarus","poland","kaliningrad"], world:"earth" },
+        // ASIA
+        china: { name:"China", pop:1400000, level:1, owner:"ai", military:10, airports:5, trains:5, adjacent:["russia","mongolia","north_korea","vietnam","laos","myanmar","india","bhutan","nepal","pakistan","afghanistan","tajikistan","kyrgyzstan","kazakhstan"], world:"earth" },
+        india: { name:"India", pop:1380000, level:1, owner:"ai", military:10, airports:5, trains:5, adjacent:["pakistan","china","nepal","bhutan","bangladesh","myanmar"], world:"earth" },
+        japan: { name:"Japan", pop:125000, level:1, owner:"ai", military:3, airports:3, trains:3, adjacent:[], world:"earth" },
+        south_korea: { name:"South Korea", pop:51000, level:1, owner:"ai", military:2, airports:2, trains:2, adjacent:["north_korea"], world:"earth" },
+        north_korea: { name:"North Korea", pop:25000, level:1, owner:"ai", military:3, airports:1, trains:1, adjacent:["china","russia","south_korea"], world:"earth" },
+        vietnam: { name:"Vietnam", pop:97000, level:1, owner:"ai", military:2, airports:1, trains:1, adjacent:["china","laos","cambodia"], world:"earth" },
+        thailand: { name:"Thailand", pop:69000, level:1, owner:"ai", military:2, airports:1, trains:1, adjacent:["myanmar","laos","cambodia","malaysia"], world:"earth" },
+        indonesia: { name:"Indonesia", pop:273000, level:1, owner:"ai", military:5, airports:4, trains:3, adjacent:["malaysia","papua_new_guinea","east_timor"], world:"earth" },
+        philippines: { name:"Philippines", pop:109000, level:1, owner:"ai", military:2, airports:2, trains:1, adjacent:[], world:"earth" },
+        pakistan: { name:"Pakistan", pop:220000, level:1, owner:"ai", military:4, airports:2, trains:2, adjacent:["india","afghanistan","iran","china"], world:"earth" },
+        bangladesh: { name:"Bangladesh", pop:164000, level:1, owner:"ai", military:2, airports:1, trains:1, adjacent:["india","myanmar"], world:"earth" },
+        iran: { name:"Iran", pop:83000, level:1, owner:"ai", military:3, airports:2, trains:2, adjacent:["turkey","iraq","armenia","azerbaijan","turkmenistan","afghanistan","pakistan"], world:"earth" },
+        iraq: { name:"Iraq", pop:40000, level:1, owner:"ai", military:2, airports:1, trains:1, adjacent:["turkey","syria","jordan","saudi_arabia","kuwait","iran"], world:"earth" },
+        saudi_arabia: { name:"Saudi Arabia", pop:34000, level:1, owner:"ai", military:3, airports:2, trains:1, adjacent:["jordan","iraq","kuwait","qatar","uae","oman","yemen"], world:"earth" },
+        turkey: { name:"Turkey", pop:84000, level:1, owner:"ai", military:3, airports:2, trains:2, adjacent:["bulgaria","greece","georgia","armenia","azerbaijan","iran","iraq","syria"], world:"earth" },
+        israel: { name:"Israel", pop:9000, level:1, owner:"ai", military:2, airports:1, trains:1, adjacent:["lebanon","syria","jordan","egypt"], world:"earth" },
+        syria: { name:"Syria", pop:17000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["turkey","iraq","jordan","israel","lebanon"], world:"earth" },
+        kazakhstan: { name:"Kazakhstan", pop:19000, level:1, owner:"ai", military:2, airports:1, trains:1, adjacent:["russia","china","kyrgyzstan","uzbekistan","turkmenistan"], world:"earth" },
+        mongolia: { name:"Mongolia", pop:3300, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["russia","china"], world:"earth" },
+        afghanistan: { name:"Afghanistan", pop:38000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["iran","pakistan","china","tajikistan","uzbekistan","turkmenistan"], world:"earth" },
+        // AMERICAS
+        usa: { name:"United States", pop:331000, level:1, owner:"ai", military:10, airports:8, trains:8, adjacent:["canada","mexico"], world:"earth" },
+        canada: { name:"Canada", pop:38000, level:1, owner:"ai", military:2, airports:3, trains:3, adjacent:["usa"], world:"earth" },
+        mexico: { name:"Mexico", pop:128000, level:1, owner:"ai", military:3, airports:2, trains:2, adjacent:["usa","guatemala","belize"], world:"earth" },
+        brazil: { name:"Brazil", pop:213000, level:1, owner:"ai", military:4, airports:3, trains:3, adjacent:["venezuela","guyana","suriname","colombia","peru","bolivia","paraguay","argentina","uruguay"], world:"earth" },
+        argentina: { name:"Argentina", pop:45000, level:1, owner:"ai", military:2, airports:2, trains:2, adjacent:["chile","bolivia","paraguay","brazil","uruguay"], world:"earth" },
+        colombia: { name:"Colombia", pop:50000, level:1, owner:"ai", military:2, airports:2, trains:1, adjacent:["venezuela","brazil","peru","ecuador","panama"], world:"earth" },
+        peru: { name:"Peru", pop:33000, level:1, owner:"ai", military:2, airports:1, trains:1, adjacent:["ecuador","colombia","brazil","bolivia","chile"], world:"earth" },
+        chile: { name:"Chile", pop:19000, level:1, owner:"ai", military:2, airports:1, trains:1, adjacent:["peru","bolivia","argentina"], world:"earth" },
+        venezuela: { name:"Venezuela", pop:28000, level:1, owner:"ai", military:2, airports:1, trains:1, adjacent:["colombia","brazil","guyana"], world:"earth" },
+        cuba: { name:"Cuba", pop:11000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:[], world:"earth" },
+        // AFRICA
+        egypt: { name:"Egypt", pop:100000, level:1, owner:"ai", military:3, airports:2, trains:2, adjacent:["israel","sudan","libya"], world:"earth" },
+        nigeria: { name:"Nigeria", pop:206000, level:1, owner:"ai", military:3, airports:2, trains:2, adjacent:["benin","niger","chad","cameroon"], world:"earth" },
+        south_africa: { name:"South Africa", pop:59000, level:1, owner:"ai", military:2, airports:2, trains:2, adjacent:["namibia","botswana","zimbabwe","mozambique","eswatini","lesotho"], world:"earth" },
+        kenya: { name:"Kenya", pop:53000, level:1, owner:"ai", military:2, airports:1, trains:1, adjacent:["ethiopia","somalia","south_sudan","uganda","tanzania"], world:"earth" },
+        ethiopia: { name:"Ethiopia", pop:115000, level:1, owner:"ai", military:2, airports:1, trains:1, adjacent:["eritrea","djibouti","somalia","kenya","south_sudan","sudan"], world:"earth" },
+        drc: { name:"DR Congo", pop:89000, level:1, owner:"ai", military:2, airports:1, trains:1, adjacent:["congo","central_african_republic","south_sudan","uganda","rwanda","burundi","tanzania","zambia","angola"], world:"earth" },
+        sudan: { name:"Sudan", pop:43000, level:1, owner:"ai", military:2, airports:1, trains:1, adjacent:["egypt","libya","chad","central_african_republic","south_sudan","ethiopia","eritrea"], world:"earth" },
+        libya: { name:"Libya", pop:6800, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["egypt","sudan","chad","niger","algeria","tunisia"], world:"earth" },
+        algeria: { name:"Algeria", pop:44000, level:1, owner:"ai", military:2, airports:1, trains:1, adjacent:["morocco","western_sahara","mauritania","mali","niger","libya","tunisia"], world:"earth" },
+        morocco: { name:"Morocco", pop:37000, level:1, owner:"ai", military:2, airports:1, trains:1, adjacent:["algeria","western_sahara"], world:"earth" },
+        ghana: { name:"Ghana", pop:31000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["ivory_coast","burkina_faso","togo"], world:"earth" },
+        cameroon: { name:"Cameroon", pop:26000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["nigeria","chad","central_african_republic","equatorial_guinea","gabon","congo"], world:"earth" },
+        tanzania: { name:"Tanzania", pop:60000, level:1, owner:"ai", military:2, airports:1, trains:1, adjacent:["kenya","uganda","rwanda","burundi","drc","zambia","malawi","mozambique"], world:"earth" },
+        angola: { name:"Angola", pop:32000, level:1, owner:"ai", military:2, airports:1, trains:1, adjacent:["drc","zambia","namibia"], world:"earth" },
+        madagascar: { name:"Madagascar", pop:28000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:[], world:"earth" },
+        // OCEANIA
+        australia: { name:"Australia", pop:25000, level:1, owner:"ai", military:2, airports:3, trains:2, adjacent:[], world:"earth" },
+        new_zealand: { name:"New Zealand", pop:5000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:[], world:"earth" },
+        papua_new_guinea: { name:"Papua New Guinea", pop:9000, level:1, owner:"ai", military:1, airports:1, trains:1, adjacent:["indonesia"], world:"earth" }
+    }
+};
+    // ==================== EARTH SVG PATHS ====================
+    countryPaths: {
+        // EUROPE
+        france: "M600,600 L660,580 L740,560 L820,580 L860,620 L880,660 L840,720 L780,760 L700,780 L620,760 L560,720 L540,660 L560,620 Z",
+        germany: "M820,580 L880,560 L940,520 L1000,540 L1040,580 L1060,620 L1020,660 L960,680 L900,660 L860,620 Z",
+        spain: "M460,760 L520,780 L560,820 L540,880 L480,920 L420,900 L380,840 L400,780 L440,760 Z",
+        italy: "M880,660 L920,700 L940,740 L920,800 L880,840 L840,820 L820,780 L840,720 Z",
+        poland: "M1000,540 L1060,520 L1120,500 L1160,520 L1180,560 L1140,600 L1080,580 L1040,560 Z",
+        ukraine: "M1160,520 L1220,500 L1280,520 L1320,560 L1340,600 L1300,660 L1240,640 L1180,600 L1140,580 Z",
+        uk: "M560,480 L620,460 L660,500 L640,540 L580,560 L540,540 L520,500 Z",
+        russia: "M1220,200 L1400,180 L1580,200 L1660,300 L1600,450 L1500,500 L1300,460 L1100,400 L1020,300 L1100,240 Z",
+        sweden: "M900,300 L960,280 L1020,320 L1000,360 L940,380 L880,350 Z",
+        norway: "M850,230 L920,210 L1000,250 L980,300 L880,280 L830,250 Z",
+        finland: "M1050,250 L1100,230 L1160,270 L1140,310 L1070,290 Z",
+        denmark: "M900,400 L940,390 L960,420 L940,450 L900,440 Z",
+        netherlands: "M780,500 L820,490 L840,530 L800,550 L760,530 Z",
+        belgium: "M740,540 L780,530 L800,560 L760,580 L720,570 Z",
+        switzerland: "M820,600 L860,590 L880,620 L840,640 L820,620 Z",
+        austria: "M940,600 L980,590 L1000,620 L980,650 L940,640 Z",
+        czech: "M940,540 L980,530 L1000,560 L980,590 L940,580 Z",
+        slovakia: "M1060,560 L1100,550 L1120,580 L1080,600 L1050,590 Z",
+        hungary: "M1080,620 L1120,610 L1140,640 L1100,670 L1060,660 Z",
+        romania: "M1180,640 L1220,630 L1260,660 L1220,690 L1160,680 Z",
+        bulgaria: "M1220,720 L1260,710 L1280,740 L1240,770 L1200,760 Z",
+        serbia: "M1140,700 L1180,690 L1200,720 L1160,750 L1120,740 Z",
+        croatia: "M1060,680 L1100,670 L1120,700 L1080,720 L1040,710 Z",
+        bosnia: "M1100,720 L1140,710 L1160,740 L1120,760 L1080,750 Z",
+        albania: "M1160,780 L1200,770 L1220,800 L1180,820 L1140,810 Z",
+        north_macedonia: "M1200,760 L1240,750 L1260,780 L1220,800 L1180,790 Z",
+        greece: "M1220,800 L1260,790 L1300,820 L1260,860 L1200,850 L1160,830 Z",
+        portugal: "M400,820 L430,800 L450,830 L420,860 L390,850 Z",
+        ireland: "M480,480 L520,470 L530,510 L490,530 L470,510 Z",
+        moldova: "M1300,620 L1340,610 L1360,640 L1320,660 L1280,650 Z",
+        estonia: "M1280,280 L1320,270 L1340,300 L1300,320 L1260,310 Z",
+        latvia: "M1300,320 L1340,310 L1360,340 L1320,360 L1280,350 Z",
+        lithuania: "M1320,360 L1360,350 L1380,380 L1340,400 L1300,390 Z",
+
+        // ASIA
+        china: "M1400,600 L1500,580 L1620,560 L1700,620 L1680,700 L1600,760 L1500,800 L1400,780 L1320,720 L1340,660 Z",
+        india: "M1200,800 L1300,780 L1400,820 L1420,900 L1350,980 L1250,1000 L1150,960 L1120,880 L1160,820 Z",
+        japan: "M1850,500 L1900,480 L1950,520 L1920,560 L1860,540 Z",
+        south_korea: "M1750,550 L1800,540 L1850,570 L1820,600 L1770,580 Z",
+        north_korea: "M1700,520 L1750,510 L1800,540 L1750,560 L1700,540 Z",
+        vietnam: "M1450,800 L1500,780 L1550,820 L1530,860 L1470,840 Z",
+        thailand: "M1380,880 L1430,860 L1480,900 L1450,940 L1390,920 Z",
+        indonesia: "M1500,1050 L1600,1020 L1700,1060 L1720,1120 L1650,1160 L1550,1140 L1480,1100 Z",
+        philippines: "M1950,950 L2000,930 L2050,970 L2020,1010 L1960,990 Z",
+        pakistan: "M1250,900 L1300,880 L1350,920 L1330,980 L1250,1000 L1200,960 Z",
+        bangladesh: "M1400,950 L1450,940 L1480,980 L1460,1020 L1400,1000 Z",
+        iran: "M1200,850 L1260,840 L1300,880 L1280,920 L1220,930 L1180,900 Z",
+        iraq: "M1150,860 L1200,850 L1230,880 L1200,910 L1140,900 Z",
+        saudi_arabia: "M1180,940 L1260,920 L1320,960 L1300,1020 L1220,1060 L1150,1020 L1120,980 Z",
+        turkey: "M1100,720 L1160,700 L1220,740 L1200,780 L1140,790 L1080,760 Z",
+        israel: "M1120,880 L1150,870 L1160,890 L1130,910 L1100,900 Z",
+        syria: "M1140,860 L1180,850 L1200,870 L1170,890 L1130,880 Z",
+        kazakhstan: "M1400,450 L1500,430 L1600,460 L1550,500 L1450,490 L1350,460 Z",
+        mongolia: "M1500,500 L1580,480 L1620,520 L1580,560 L1500,550 Z",
+        afghanistan: "M1300,820 L1360,810 L1400,840 L1380,880 L1320,870 L1280,850 Z",
+
+        // AMERICAS
+        usa: "M200,400 L300,350 L450,380 L520,450 L480,550 L380,600 L250,580 L180,500 L200,400 Z",
+        canada: "M180,250 L280,230 L380,280 L320,380 L220,360 L150,300 Z",
+        mexico: "M300,550 L400,530 L450,600 L400,680 L300,660 L250,600 Z",
+        brazil: "M500,800 L600,780 L680,820 L720,900 L700,1000 L620,1080 L520,1100 L460,1020 L460,900 L500,800 Z",
+        argentina: "M480,1150 L540,1130 L580,1170 L560,1230 L500,1250 L450,1210 Z",
+        colombia: "M450,900 L500,880 L540,920 L520,980 L460,960 L430,920 Z",
+        peru: "M430,960 L480,940 L520,980 L500,1040 L440,1020 L410,980 Z",
+        chile: "M460,1060 L500,1040 L520,1080 L500,1140 L460,1120 L440,1080 Z",
+        venezuela: "M500,860 L540,840 L580,880 L560,920 L520,900 L480,880 Z",
+        cuba: "M450,700 L490,680 L510,710 L490,740 L450,730 Z",
+
+        // AFRICA
+        egypt: "M1300,950 L1360,930 L1420,960 L1400,1020 L1320,1040 L1260,1000 Z",
+        nigeria: "M1050,1100 L1120,1080 L1180,1120 L1160,1180 L1080,1200 L1020,1160 Z",
+        south_africa: "M1300,1200 L1380,1180 L1420,1220 L1400,1280 L1320,1300 L1260,1260 Z",
+        kenya: "M1400,1050 L1460,1030 L1500,1070 L1480,1120 L1420,1100 Z",
+        ethiopia: "M1350,1000 L1420,980 L1480,1020 L1440,1070 L1380,1060 Z",
+        drc: "M1250,1100 L1320,1080 L1380,1120 L1350,1180 L1280,1200 L1220,1160 Z",
+        sudan: "M1280,1000 L1350,980 L1420,1020 L1380,1080 L1300,1060 L1240,1030 Z",
+        libya: "M1200,950 L1280,930 L1340,960 L1300,1000 L1220,980 L1160,960 Z",
+        algeria: "M1000,950 L1080,930 L1120,970 L1080,1020 L1000,1000 Z",
+        morocco: "M900,920 L960,900 L1000,940 L960,980 L900,960 Z",
+        ghana: "M1000,1100 L1060,1080 L1100,1120 L1060,1160 L1000,1140 Z",
+        cameroon: "M1120,1120 L1180,1100 L1220,1140 L1180,1180 L1120,1160 Z",
+        tanzania: "M1420,1100 L1480,1080 L1520,1120 L1480,1160 L1420,1140 Z",
+        angola: "M1220,1180 L1280,1160 L1320,1200 L1280,1240 L1220,1220 Z",
+        madagascar: "M1500,1180 L1540,1160 L1560,1200 L1530,1240 L1490,1220 Z",
+
+        // OCEANIA
+        australia: "M1600,1000 L1700,980 L1780,1020 L1800,1100 L1750,1160 L1650,1140 L1580,1080 Z",
+        new_zealand: "M1850,1100 L1900,1080 L1930,1120 L1900,1160 L1850,1140 Z",
+        papua_new_guinea: "M1750,950 L1800,930 L1850,960 L1830,1000 L1780,980 Z"
+    },
+
+    // ==================== 50 MARS COUNTRIES ====================
+    marsCountries: {
+        olympus_imperium: { name:"Olympus Imperium", pop:50000, level:5, owner:"ai", military:8, airports:5, trains:4, adjacent:["tharsis_dominion","elysium_collective","vallis_marineris"], world:"mars" },
+        tharsis_dominion: { name:"Tharsis Dominion", pop:45000, level:5, owner:"ai", military:7, airports:4, trains:4, adjacent:["olympus_imperium","noctis_labyrinth","arcadia_plains"], world:"mars" },
+        elysium_collective: { name:"Elysium Collective", pop:42000, level:4, owner:"ai", military:6, airports:4, trains:3, adjacent:["olympus_imperium","utopia_basin","amazonis_planitia"], world:"mars" },
+        vallis_marineris: { name:"Vallis Marineris", pop:48000, level:5, owner:"ai", military:9, airports:5, trains:5, adjacent:["olympus_imperium","noctis_labyrinth","candor_chasma","melas_chasma"], world:"mars" },
+        noctis_labyrinth: { name:"Noctis Labyrinth", pop:35000, level:4, owner:"ai", military:5, airports:3, trains:3, adjacent:["tharsis_dominion","vallis_marineris","sinai_planum"], world:"mars" },
+        arcadia_plains: { name:"Arcadia Plains", pop:38000, level:4, owner:"ai", military:5, airports:3, trains:3, adjacent:["tharsis_dominion","tempe_terra","alba_patera"], world:"mars" },
+        utopia_basin: { name:"Utopia Basin", pop:40000, level:4, owner:"ai", military:6, airports:3, trains:3, adjacent:["elysium_collective","isidis_planitia","nepenthes_mensae"], world:"mars" },
+        amazonis_planitia: { name:"Amazonis Planitia", pop:36000, level:4, owner:"ai", military:5, airports:3, trains:2, adjacent:["elysium_collective","lunae_planum","daedalia_planum"], world:"mars" },
+        candor_chasma: { name:"Candor Chasma", pop:32000, level:3, owner:"ai", military:4, airports:2, trains:2, adjacent:["vallis_marineris","melas_chasma","ophir_chasma"], world:"mars" },
+        melas_chasma: { name:"Melas Chasma", pop:34000, level:3, owner:"ai", military:5, airports:2, trains:2, adjacent:["vallis_marineris","candor_chasma","coprates_chasma"], world:"mars" },
+        ophir_chasma: { name:"Ophir Chasma", pop:30000, level:3, owner:"ai", military:4, airports:2, trains:2, adjacent:["candor_chasma","sinai_planum","juventae_chasma"], world:"mars" },
+        coprates_chasma: { name:"Coprates Chasma", pop:31000, level:3, owner:"ai", military:4, airports:2, trains:2, adjacent:["melas_chasma","capri_chasma","aurorae_chaos"], world:"mars" },
+        sinai_planum: { name:"Sinai Planum", pop:33000, level:3, owner:"ai", military:5, airports:2, trains:2, adjacent:["noctis_labyrinth","ophir_chasma","solis_planum"], world:"mars" },
+        solis_planum: { name:"Solis Planum", pop:35000, level:4, owner:"ai", military:5, airports:3, trains:3, adjacent:["sinai_planum","lunae_planum","daedalia_planum"], world:"mars" },
+        lunae_planum: { name:"Lunae Planum", pop:32000, level:3, owner:"ai", military:4, airports:2, trains:2, adjacent:["amazonis_planitia","solis_planum","tempe_terra"], world:"mars" },
+        daedalia_planum: { name:"Daedalia Planum", pop:28000, level:3, owner:"ai", military:4, airports:2, trains:2, adjacent:["amazonis_planitia","solis_planum","phaethontis"], world:"mars" },
+        tempe_terra: { name:"Tempe Terra", pop:30000, level:3, owner:"ai", military:4, airports:2, trains:2, adjacent:["arcadia_plains","lunae_planum","alba_patera"], world:"mars" },
+        alba_patera: { name:"Alba Patera", pop:27000, level:3, owner:"ai", military:3, airports:2, trains:2, adjacent:["arcadia_plains","tempe_terra","tharsis_tholus"], world:"mars" },
+        isidis_planitia: { name:"Isidis Planitia", pop:29000, level:3, owner:"ai", military:4, airports:2, trains:2, adjacent:["utopia_basin","nepenthes_mensae","tyrrhena_terra"], world:"mars" },
+        nepenthes_mensae: { name:"Nepenthes Mensae", pop:26000, level:3, owner:"ai", military:3, airports:2, trains:1, adjacent:["utopia_basin","isidis_planitia","aeolis_dorsa"], world:"mars" },
+        tyrrhena_terra: { name:"Tyrrhena Terra", pop:31000, level:3, owner:"ai", military:4, airports:2, trains:2, adjacent:["isidis_planitia","hellas_basin","hesperia_planum"], world:"mars" },
+        hellas_basin: { name:"Hellas Basin", pop:45000, level:5, owner:"ai", military:7, airports:4, trains:4, adjacent:["tyrrhena_terra","hesperia_planum","promethei_terra"], world:"mars" },
+        hesperia_planum: { name:"Hesperia Planum", pop:33000, level:4, owner:"ai", military:5, airports:3, trains:3, adjacent:["tyrrhena_terra","hellas_basin","malea_planum"], world:"mars" },
+        promethei_terra: { name:"Promethei Terra", pop:28000, level:3, owner:"ai", military:4, airports:2, trains:2, adjacent:["hellas_basin","malea_planum","australe_planum"], world:"mars" },
+        malea_planum: { name:"Malea Planum", pop:25000, level:3, owner:"ai", military:3, airports:2, trains:1, adjacent:["hesperia_planum","promethei_terra"], world:"mars" },
+        australe_planum: { name:"Australe Planum", pop:22000, level:2, owner:"ai", military:3, airports:1, trains:1, adjacent:["promethei_terra","sirenum_terra"], world:"mars" },
+        sirenum_terra: { name:"Sirenum Terra", pop:24000, level:2, owner:"ai", military:3, airports:1, trains:1, adjacent:["australe_planum","phaethontis","cimmeria_terra"], world:"mars" },
+        phaethontis: { name:"Phaethontis", pop:26000, level:3, owner:"ai", military:3, airports:2, trains:1, adjacent:["daedalia_planum","sirenum_terra","aonia_terra"], world:"mars" },
+        aonia_terra: { name:"Aonia Terra", pop:23000, level:2, owner:"ai", military:3, airports:1, trains:1, adjacent:["phaethontis","cimmeria_terra"], world:"mars" },
+        cimmeria_terra: { name:"Cimmeria Terra", pop:27000, level:3, owner:"ai", military:4, airports:2, trains:2, adjacent:["sirenum_terra","aonia_terra","aeolis_dorsa"], world:"mars" },
+        aeolis_dorsa: { name:"Aeolis Dorsa", pop:29000, level:3, owner:"ai", military:4, airports:2, trains:2, adjacent:["nepenthes_mensae","cimmeria_terra","elysium_mons"], world:"mars" },
+        elysium_mons: { name:"Elysium Mons", pop:38000, level:4, owner:"ai", military:6, airports:3, trains:3, adjacent:["aeolis_dorsa","elysium_collective"], world:"mars" },
+        tharsis_tholus: { name:"Tharsis Tholus", pop:25000, level:3, owner:"ai", military:3, airports:2, trains:1, adjacent:["alba_patera","ascraeus_mons"], world:"mars" },
+        ascraeus_mons: { name:"Ascraeus Mons", pop:35000, level:4, owner:"ai", military:5, airports:3, trains:3, adjacent:["tharsis_tholus","pavonis_mons"], world:"mars" },
+        pavonis_mons: { name:"Pavonis Mons", pop:36000, level:4, owner:"ai", military:5, airports:3, trains:3, adjacent:["ascraeus_mons","arsia_mons"], world:"mars" },
+        arsia_mons: { name:"Arsia Mons", pop:34000, level:4, owner:"ai", military:5, airports:3, trains:2, adjacent:["pavonis_mons","solis_planum"], world:"mars" },
+        capri_chasma: { name:"Capri Chasma", pop:24000, level:2, owner:"ai", military:3, airports:1, trains:1, adjacent:["coprates_chasma","aurorae_chaos"], world:"mars" },
+        aurorae_chaos: { name:"Aurorae Chaos", pop:22000, level:2, owner:"ai", military:3, airports:1, trains:1, adjacent:["coprates_chasma","capri_chasma"], world:"mars" },
+        juventae_chasma: { name:"Juventae Chasma", pop:26000, level:3, owner:"ai", military:3, airports:2, trains:1, adjacent:["ophir_chasma","xanthe_terra"], world:"mars" },
+        xanthe_terra: { name:"Xanthe Terra", pop:28000, level:3, owner:"ai", military:4, airports:2, trains:2, adjacent:["juventae_chasma","chryse_planitia"], world:"mars" },
+        chryse_planitia: { name:"Chryse Planitia", pop:30000, level:3, owner:"ai", military:4, airports:2, trains:2, adjacent:["xanthe_terra","acidalia_planitia"], world:"mars" },
+        acidalia_planitia: { name:"Acidalia Planitia", pop:32000, level:3, owner:"ai", military:4, airports:2, trains:2, adjacent:["chryse_planitia","arcadia_plains"], world:"mars" },
+        new_marineris: { name:"New Marineris", pop:40000, level:4, owner:"ai", military:6, airports:3, trains:3, adjacent:["vallis_marineris","coprates_chasma"], world:"mars" },
+        olympus_outpost: { name:"Olympus Outpost", pop:42000, level:4, owner:"ai", military:6, airports:3, trains:3, adjacent:["olympus_imperium","tharsis_dominion"], world:"mars" },
+        red_tharsis: { name:"Red Tharsis", pop:38000, level:4, owner:"ai", military:5, airports:3, trains:2, adjacent:["tharsis_dominion","pavonis_mons"], world:"mars" },
+        hellas_rim: { name:"Hellas Rim", pop:32000, level:3, owner:"ai", military:4, airports:2, trains:2, adjacent:["hellas_basin","promethei_terra"], world:"mars" },
+        polar_cap_north: { name:"Polar Cap North", pop:20000, level:2, owner:"ai", military:3, airports:1, trains:1, adjacent:["arcadia_plains","alba_patera"], world:"mars" },
+        polar_cap_south: { name:"Polar Cap South", pop:18000, level:2, owner:"ai", military:2, airports:1, trains:1, adjacent:["australe_planum"], world:"mars" },
+        gale_crater: { name:"Gale Crater", pop:28000, level:3, owner:"ai", military:4, airports:2, trains:2, adjacent:["aeolis_dorsa","elysium_mons"], world:"mars" },
+        spirit_plains: { name:"Spirit Plains", pop:25000, level:3, owner:"ai", military:3, airports:2, trains:1, adjacent:["gale_crater","tyrrhena_terra"], world:"mars" }
+    },
+
+    // ==================== MARS SVG PATHS ====================
+    marsCountryPaths: {
+        olympus_imperium: "M400,1200 L480,1170 L560,1190 L600,1250 L580,1320 L500,1360 L420,1340 L380,1280 Z",
+        tharsis_dominion: "M560,1190 L640,1160 L720,1180 L760,1240 L740,1310 L660,1350 L580,1330 L600,1250 Z",
+        elysium_collective: "M720,1180 L800,1150 L880,1170 L920,1230 L900,1300 L820,1340 L740,1320 L760,1240 Z",
+        vallis_marineris: "M400,1320 L480,1290 L560,1310 L600,1370 L580,1440 L500,1480 L420,1460 L380,1400 Z",
+        noctis_labyrinth: "M560,1310 L640,1280 L720,1300 L760,1360 L740,1430 L660,1470 L580,1450 L600,1370 Z",
+        arcadia_plains: "M720,1300 L800,1270 L880,1290 L920,1350 L900,1420 L820,1460 L740,1440 L760,1360 Z",
+        utopia_basin: "M880,1170 L960,1140 L1040,1160 L1080,1220 L1060,1290 L980,1330 L900,1310 L920,1230 Z",
+        amazonis_planitia: "M880,1290 L960,1260 L1040,1280 L1080,1340 L1060,1410 L980,1450 L900,1430 L920,1350 Z",
+        candor_chasma: "M400,1440 L480,1410 L560,1430 L600,1490 L580,1560 L500,1600 L420,1580 L380,1520 Z",
+        melas_chasma: "M560,1430 L640,1400 L720,1420 L760,1480 L740,1550 L660,1590 L580,1570 L600,1490 Z",
+        ophir_chasma: "M720,1420 L800,1390 L880,1410 L920,1470 L900,1540 L820,1580 L740,1560 L760,1480 Z",
+        coprates_chasma: "M880,1420 L960,1390 L1040,1410 L1080,1470 L1060,1540 L980,1580 L900,1560 L920,1470 Z",
+        sinai_planum: "M640,1280 L720,1250 L800,1270 L840,1330 L820,1400 L740,1440 L660,1420 L680,1340 Z",
+        solis_planum: "M800,1270 L880,1240 L960,1260 L1000,1320 L980,1390 L900,1430 L820,1410 L840,1330 Z",
+        lunae_planum: "M960,1260 L1040,1230 L1120,1250 L1160,1310 L1140,1380 L1060,1420 L980,1400 L1000,1320 Z",
+        daedalia_planum: "M1040,1280 L1120,1250 L1200,1270 L1240,1330 L1220,1400 L1140,1440 L1060,1420 L1080,1340 Z",
+        tempe_terra: "M1120,1180 L1200,1150 L1280,1170 L1320,1230 L1300,1300 L1220,1340 L1140,1320 L1160,1240 Z",
+        alba_patera: "M1200,1150 L1280,1120 L1360,1140 L1400,1200 L1380,1270 L1300,1310 L1220,1290 L1240,1210 Z",
+        isidis_planitia: "M1200,1270 L1280,1240 L1360,1260 L1400,1320 L1380,1390 L1300,1430 L1220,1410 L1240,1330 Z",
+        nepenthes_mensae: "M1360,1200 L1440,1170 L1520,1190 L1560,1250 L1540,1320 L1460,1360 L1380,1340 L1400,1260 Z",
+        tyrrhena_terra: "M1400,1320 L1480,1290 L1560,1310 L1600,1370 L1580,1440 L1500,1480 L1420,1460 L1440,1380 Z",
+        hellas_basin: "M1480,1290 L1560,1260 L1640,1280 L1680,1340 L1660,1410 L1580,1450 L1500,1430 L1520,1350 Z",
+        hesperia_planum: "M1560,1310 L1640,1280 L1720,1300 L1760,1360 L1740,1430 L1660,1470 L1580,1450 L1600,1370 Z",
+        promethei_terra: "M1640,1280 L1720,1250 L1800,1270 L1840,1330 L1820,1400 L1740,1440 L1660,1420 L1680,1340 Z",
+        malea_planum: "M1720,1300 L1800,1270 L1880,1290 L1920,1350 L1900,1420 L1820,1460 L1740,1440 L1760,1360 Z",
+        australe_planum: "M1800,1270 L1880,1240 L1960,1260 L2000,1320 L1980,1390 L1900,1430 L1820,1410 L1840,1330 Z",
+        sirenum_terra: "M1880,1240 L1960,1210 L2040,1230 L2080,1290 L2060,1360 L1980,1400 L1900,1380 L1920,1300 Z",
+        phaethontis: "M1960,1260 L2040,1230 L2120,1250 L2160,1310 L2140,1380 L2060,1420 L1980,1400 L2000,1320 Z",
+        aonia_terra: "M2040,1230 L2120,1200 L2200,1220 L2240,1280 L2220,1350 L2140,1390 L2060,1370 L2080,1290 Z",
+        cimmeria_terra: "M2120,1200 L2200,1170 L2280,1190 L2320,1250 L2300,1320 L2220,1360 L2140,1340 L2160,1260 Z",
+        aeolis_dorsa: "M2200,1170 L2280,1140 L2360,1160 L2400,1220 L2380,1290 L2300,1330 L2220,1310 L2240,1230 Z",
+        elysium_mons: "M1440,1170 L1520,1140 L1600,1160 L1640,1220 L1620,1290 L1540,1330 L1460,1310 L1480,1230 Z",
+        tharsis_tholus: "M1280,1120 L1360,1090 L1440,1110 L1480,1170 L1460,1240 L1380,1280 L1300,1260 L1320,1180 Z",
+        ascraeus_mons: "M1360,1090 L1440,1060 L1520,1080 L1560,1140 L1540,1210 L1460,1250 L1380,1230 L1400,1150 Z",
+        pavonis_mons: "M1440,1060 L1520,1030 L1600,1050 L1640,1110 L1620,1180 L1540,1220 L1460,1200 L1480,1120 Z",
+        arsia_mons: "M1520,1030 L1600,1000 L1680,1020 L1720,1080 L1700,1150 L1620,1190 L1540,1170 L1560,1090 Z",
+        capri_chasma: "M960,1390 L1040,1360 L1120,1380 L1160,1440 L1140,1510 L1060,1550 L980,1530 L1000,1450 Z",
+        aurorae_chaos: "M1040,1360 L1120,1330 L1200,1350 L1240,1410 L1220,1480 L1140,1520 L1060,1500 L1080,1420 Z",
+        juventae_chasma: "M800,1390 L880,1360 L960,1380 L1000,1440 L980,1510 L900,1550 L820,1530 L840,1450 Z",
+        xanthe_terra: "M880,1360 L960,1330 L1040,1350 L1080,1410 L1060,1480 L980,1520 L900,1500 L920,1420 Z",
+        chryse_planitia: "M1040,1350 L1120,1320 L1200,1340 L1240,1400 L1220,1470 L1140,1510 L1060,1490 L1080,1410 Z",
+        acidalia_planitia: "M1120,1320 L1200,1290 L1280,1310 L1320,1370 L1300,1440 L1220,1480 L1140,1460 L1160,1380 Z",
+        new_marineris: "M1040,1410 L1120,1380 L1200,1400 L1240,1460 L1220,1530 L1140,1570 L1060,1550 L1080,1470 Z",
+        olympus_outpost: "M480,1170 L560,1140 L640,1160 L680,1220 L660,1290 L580,1330 L500,1310 L520,1230 Z",
+        red_tharsis: "M1520,1080 L1600,1050 L1680,1070 L1720,1130 L1700,1200 L1620,1240 L1540,1220 L1560,1140 Z",
+        hellas_rim: "M1560,1260 L1640,1230 L1720,1250 L1760,1310 L1740,1380 L1660,1420 L1580,1400 L1600,1320 Z",
+        polar_cap_north: "M1200,1090 L1280,1060 L1360,1080 L1400,1140 L1380,1210 L1300,1250 L1220,1230 L1240,1150 Z",
+        polar_cap_south: "M1880,1210 L1960,1180 L2040,1200 L2080,1260 L2060,1330 L1980,1370 L1900,1350 L1920,1270 Z",
+        gale_crater: "M1520,1140 L1600,1110 L1680,1130 L1720,1190 L1700,1260 L1620,1300 L1540,1280 L1560,1200 Z",
+        spirit_plains: "M1600,1110 L1680,1080 L1760,1100 L1800,1160 L1780,1230 L1700,1270 L1620,1250 L1640,1170 Z"
+    },
+
+    // ==================== SHARED GAME DATA ====================
+    battle: { active:false, attacker:null, defender:null, turn:0, interval:null },
+    alliances: { nextId:1, list:{} },
+    cooldowns: { global:0, targetImmunity:{} },
+    connections: [],
+    chests: {},
+    lastDailyCollect: null,
+    gameTime:0, lastTick:Date.now(),
+    marsStoryShown: false,
+    giftCodes: { "WELCOME10": { type:"tokens", value:10 }, "LEGENDARY": { type:"card", rarity:"legendary" } },
+    usedGiftCodes:[],
+    cardRarities: {
+        common: { weight:15, min:{a:1,t:1,m:1}, max:{a:2,t:2,m:2} },
+        rare: { weight:30, min:{a:1,t:1,m:2}, max:{a:3,t:3,m:4} },
+        superRare: { weight:40, min:{a:2,t:2,m:3}, max:{a:5,t:5,m:8} },
+        metropolis: { weight:10, min:{a:3,t:3,m:5}, max:{a:8,t:8,m:15} },
+        mythic: { weight:4.999, min:{a:5,t:5,m:10}, max:{a:15,t:15,m:30} },
+        legendary: { weight:0.001, min:{a:10,t:10,m:20}, max:{a:30,t:30,m:100} }
+    },
+    quizQuestions: [
+        { q:"Year Treaty of Versailles?", a:"1919", opts:["1918","1919","1920","1921"] },
+        { q:"First artificial satellite?", a:"Sputnik 1", opts:["Explorer 1","Sputnik 1","Apollo 1","Vostok 1"] },
+        { q:"Who painted Mona Lisa?", a:"Leonardo da Vinci", opts:["Michelangelo","Leonardo da Vinci","Raphael","Rembrandt"] },
+        { q:"Capital of Australia?", a:"Canberra", opts:["Sydney","Melbourne","Canberra","Perth"] }
+    ],
+    quizScore:0, quizCurrentQuestion:0,
+
+    getCurrentCountries() {
+        if (this.player.marsUnlocked && this.player.currentWorld === "mars") {
+            return this.marsCountries;
+        }
+        return this.countries;
+    }
+};
+
+// ==================== HELPER FUNCTIONS ====================
+function getAvailableInfra(countryId, type) {
+    const countries = GameState.getCurrentCountries();
+    const c = countries[countryId];
+    if (!c) return 0;
+    return Math.max(0, (c[type]||0) - GameState.connections.filter(con => con.countryId === countryId && con.type === type).length);
+}
+function getCardAvailablePoints(card, type) {
+    return Math.max(0, (card[type]||0) - GameState.connections.filter(con => con.cardId === card.id && con.type === type).length);
+}
+// ==================== FULL GAME ENGINE ====================
+class WarXoneGame {
+    constructor() {
+        this.screens = {
+            mainMenu: document.getElementById('main-menu'), signup: document.getElementById('signup-screen'),
+            setup: document.getElementById('setup-screen'), map: document.getElementById('map-screen'),
+            card: document.getElementById('card-screen'), connection: document.getElementById('connection-screen'),
+            alliance: document.getElementById('alliance-screen'), quiz: document.getElementById('quiz-screen'),
+            settings: document.getElementById('settings-screen')
+        };
+        this.svg = document.getElementById('map-svg');
+        this.battlefield = document.getElementById('battlefield-overlay');
+        this.tutorialModal = document.getElementById('tutorial-modal');
+        this.storyModal = document.getElementById('story-modal');
+        this.marsStoryModal = document.getElementById('mars-story-modal');
+        this.pauseMenu = document.getElementById('pause-menu');
+        this.mapView = { x:0, y:0, scale:1 };
+        this.panStart = null;
+        this.isPanning = false;
+        this.init();
+    }
+
+    // ==================== CENTRAL ACTION HANDLER ====================
+    handleAction(action, e) {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        SFX.buttonClick();
+        switch(action) {
+            // Navigation
+            case 'new-game': this.showScreen('signup'); break;
+            case 'load-game': this.loadGame(); break;
+            case 'story': this.storyModal.classList.add('active'); break;
+            case 'story-close': this.storyModal.classList.remove('active'); break;
+            case 'settings': this.showScreen('settings'); break;
+            case 'how-to-play': this.applyTranslations(); this.tutorialModal.classList.add('active'); break;
+            case 'tutorial-close': this.tutorialModal.classList.remove('active'); break;
+            case 'back-to-menu': this.showScreen('mainMenu'); break;
+            case 'back-to-map': this.showScreen('map'); break;
+
+            // Signup & Setup
+            case 'signup': this.handleSignUp(); break;
+            case 'start-game': this.startNewGame(); break;
+
+            // Map actions
+            case 'quiz': this.showScreen('quiz'); break;
+            case 'collect-income': case 'collect-income2': this.collectDailyIncome(); break;
+            case 'pause': this.pauseMenu.classList.add('active'); break;
+            case 'resume': this.pauseMenu.classList.remove('active'); break;
+            case 'quit': this.pauseMenu.classList.remove('active'); this.showScreen('mainMenu'); break;
+
+            // Map controls
+            case 'zoom-in': this.mapView.scale = Math.min(3, this.mapView.scale * 1.2); this.updateMapTransform(); break;
+            case 'zoom-out': this.mapView.scale = Math.max(0.3, this.mapView.scale * 0.8); this.updateMapTransform(); break;
+            case 'reset-view': this.mapView = {x:0, y:0, scale:1}; this.updateMapTransform(); break;
+
+            // World switching
+            case 'world-earth': this.switchWorld('earth'); break;
+            case 'world-mars': this.switchWorld('mars'); break;
+
+            // Mars story
+            case 'mars-story-accept': this.acceptMars(); break;
+            case 'mars-story-skip': this.skipMars(); break;
+
+            // Cards & Shop
+            case 'buy-pack': this.buyCardPack(); break;
+            case 'redeem-code': this.redeemGiftCode(); break;
+
+            // Connections
+            case 'create-connection': this.createConnection(); break;
+
+            // Alliance
+            case 'create-alliance': this.createAlliance(); break;
+
+            // Quiz
+            case 'start-quiz': this.startQuiz(); break;
+
+            // Settings
+            case 'save-game': this.saveGame(); break;
+            case 'reset-game': this.resetGame(); break;
+            case 'export-save': this.exportSave(); break;
+            case 'import-save': this.importSave(); break;
+
+            // Battlefield
+            case 'auto-battle': this.toggleAutoBattle(); break;
+            case 'retreat': this.retreatBattle(); break;
+            case 'close-battlefield': this.closeBattlefield(); break;
+        }
+    }
+
+    // ==================== INITIALIZATION ====================
+    init() {
+        // Event delegation on game container
+        const container = document.getElementById('game-container');
+        container.addEventListener('click', (e) => {
+            const target = e.target.closest('[data-action]');
+            if (target) this.handleAction(target.dataset.action, e);
+        });
+        container.addEventListener('touchstart', (e) => {
+            const target = e.target.closest('[data-action]');
+            if (target) { e.preventDefault(); this.handleAction(target.dataset.action, e); }
+        }, {passive: false});
+
+        // Bottom nav buttons
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => { SFX.buttonClick(); this.showScreen(btn.dataset.screen); });
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); SFX.buttonClick(); this.showScreen(btn.dataset.screen); });
+        });
+
+        // Back to map buttons
+        document.querySelectorAll('.back-to-map-btn').forEach(btn => {
+            btn.addEventListener('click', () => { SFX.buttonClick(); this.showScreen('map'); });
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); SFX.buttonClick(); this.showScreen('map'); });
+        });
+
+        // Language selector
+        document.getElementById('language-select').addEventListener('change', (e) => {
+            GameState.player.language = e.target.value;
+            this.applyTranslations();
+        });
+
+        // Mobile nav toggle
+        const mobileToggle = document.getElementById('mobile-nav-toggle');
+        mobileToggle.addEventListener('click', () => {
+            const nav = document.getElementById('desktop-nav');
+            nav.style.display = nav.style.display === 'flex' ? 'none' : 'flex';
+        });
+        mobileToggle.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const nav = document.getElementById('desktop-nav');
+            nav.style.display = nav.style.display === 'flex' ? 'none' : 'flex';
+        });
+
+        // Map pan & country selection
+        this.setupMapInteraction();
+
+        // Connection dropdowns
+        document.getElementById('connect-card-select').addEventListener('change', () => this.updateConnectionInfo());
+        document.getElementById('connect-country-select').addEventListener('change', () => this.updateConnectionInfo());
+        document.getElementById('connect-type-select').addEventListener('change', () => this.updateConnectionInfo());
+
+        // Initialize game
+        this.populateStartingCountries();
+        this.applyTranslations();
+        this.startGameLoop();
+    }
+
+    // ==================== MAP INTERACTION ====================
+    setupMapInteraction() {
+        // Mouse events
+        this.svg.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.country-path')) return; // Let country click handle
+            this.isPanning = true;
+            this.panStart = { x: e.clientX - this.mapView.x, y: e.clientY - this.mapView.y };
+            this.svg.style.cursor = 'grabbing';
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (!this.isPanning) return;
+            this.mapView.x = e.clientX - this.panStart.x;
+            this.mapView.y = e.clientY - this.panStart.y;
+            this.updateMapTransform();
+        });
+        window.addEventListener('mouseup', () => {
+            this.isPanning = false;
+            this.svg.style.cursor = 'grab';
+        });
+
+        // Touch events
+        this.svg.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.country-path')) return;
+            if (e.touches.length === 1) {
+                this.isPanning = true;
+                this.panStart = { x: e.touches[0].clientX - this.mapView.x, y: e.touches[0].clientY - this.mapView.y };
+            }
+        }, {passive: false});
+        this.svg.addEventListener('touchmove', (e) => {
+            if (!this.isPanning || e.touches.length !== 1) return;
+            e.preventDefault();
+            this.mapView.x = e.touches[0].clientX - this.panStart.x;
+            this.mapView.y = e.touches[0].clientY - this.panStart.y;
+            this.updateMapTransform();
+        }, {passive: false});
+        this.svg.addEventListener('touchend', () => { this.isPanning = false; });
+
+        // Country selection (click & touch)
+        this.svg.addEventListener('click', (e) => {
+            const path = e.target.closest('.country-path');
+            if (path && path.dataset.id) this.selectCountry(path.dataset.id);
+        });
+        this.svg.addEventListener('touchstart', (e) => {
+            const path = e.target.closest('.country-path');
+            if (path && path.dataset.id) {
+                e.preventDefault();
+                this.selectCountry(path.dataset.id);
+            }
+        }, {passive: false});
+    }
+
+    // ==================== WORLD SWITCHING ====================
+    switchWorld(world) {
+        if (world === 'mars' && !GameState.player.marsUnlocked) {
+            this.notify('🔒 Locked', 'Conquer 90% of Earth first!');
+            return;
+        }
+        GameState.player.currentWorld = world;
+        document.querySelectorAll('.world-toggle button').forEach(b => b.classList.remove('active'));
+        const toggleBtn = document.querySelector(`[data-action="world-${world}"]`);
+        if (toggleBtn) toggleBtn.classList.add('active');
+        this.mapView = { x:0, y:0, scale:1 };
+        this.drawMap();
+    }
+
+    acceptMars() {
+        GameState.player.marsUnlocked = true;
+        GameState.marsStoryShown = true;
+        this.marsStoryModal.classList.remove('active');
+        this.switchWorld('mars');
+        SFX.marsDiscovered();
+        this.notify('🚀 Mars Unlocked!', '50 new nations await your conquest!');
+    }
+
+    skipMars() {
+        GameState.player.marsUnlocked = true;
+        GameState.marsStoryShown = true;
+        this.marsStoryModal.classList.remove('active');
+        this.notify('🔴 Mars Available', 'Switch to Mars from the map toggle.');
+    }
+
+    checkMarsUnlock() {
+        if (GameState.marsStoryShown || !GameState.player.signedUp) return;
+        const earthCountries = Object.keys(GameState.countries).length;
+        const ownedEarth = Object.values(GameState.countries).filter(c => c.owner === 'player').length;
+        const percent = Math.round((ownedEarth / earthCountries) * 100);
+        document.getElementById('earth-percent').textContent = percent + '%';
+        if (percent >= 90 && !GameState.marsStoryShown) {
+            this.marsStoryModal.classList.add('active');
+        }
+    }
+
+    // ==================== DRAW MAP ====================
+    drawMap() {
+        this.svg.innerHTML = '';
+        const isMars = GameState.player.currentWorld === 'mars' && GameState.player.marsUnlocked;
+        const countries = isMars ? GameState.marsCountries : GameState.countries;
+        const paths = isMars ? GameState.marsCountryPaths : GameState.countryPaths;
+
+        // Adjust viewBox for Mars (smaller, focused area)
+        this.svg.setAttribute('viewBox', isMars ? '300 1000 2200 700' : '0 0 2400 1600');
+
+        for (const [id, path] of Object.entries(paths)) {
+            const country = countries[id];
+            if (!country) continue;
+
+            const poly = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            poly.setAttribute("d", path);
+            poly.dataset.id = id;
+            poly.classList.add("country-path");
+            this.updateCountryStyle(poly, id, isMars);
+            this.svg.appendChild(poly);
+
+            // Label
+            const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            label.classList.add("country-label");
+            try {
+                const bbox = poly.getBBox();
+                label.setAttribute("x", bbox.x + bbox.width / 2);
+                label.setAttribute("y", bbox.y + bbox.height / 2 + 4);
+            } catch(e) {
+                label.setAttribute("x", 0);
+                label.setAttribute("y", 0);
+            }
+            label.textContent = country.name;
+            this.svg.appendChild(label);
+
+            // Treasure chest
+            if (GameState.chests[id]) {
+                const chest = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                chest.classList.add("chest-icon");
+                try {
+                    const bbox = poly.getBBox();
+                    chest.setAttribute("x", bbox.x + bbox.width / 2);
+                    chest.setAttribute("y", bbox.y - 5);
+                } catch(e) {
+                    chest.setAttribute("x", 0);
+                    chest.setAttribute("y", 0);
+                }
+                chest.textContent = "🧰";
+                this.svg.appendChild(chest);
+            }
+        }
+
+        this.updateMapTransform();
+    }
+
+    updateCountryStyle(poly, id, isMars) {
+        const countries = isMars ? GameState.marsCountries : GameState.countries;
+        const country = countries[id];
+        if (!country) return;
+
+        poly.classList.remove("owned", "adjacent", "enemy", "mars-owned", "mars-adjacent", "mars-enemy");
+
+        const playerTerritories = GameState.player.territories;
+        const isOwned = country.owner === 'player';
+        const isAdjacent = playerTerritories.some(tId => {
+            const t = countries[tId];
+            return t && t.adjacent && t.adjacent.includes(id);
+        });
+
+        if (isMars) {
+            if (isOwned) poly.classList.add("mars-owned");
+            else if (isAdjacent) poly.classList.add("mars-adjacent");
+            else poly.classList.add("mars-enemy");
+        } else {
+            if (isOwned) poly.classList.add("owned");
+            else if (isAdjacent) poly.classList.add("adjacent");
+            else poly.classList.add("enemy");
+        }
+    }
+
+    updateMapTransform() {
+        this.svg.style.transform = `translate(${this.mapView.x}px, ${this.mapView.y}px) scale(${this.mapView.scale})`;
+    }
+
+    // ==================== COUNTRY SELECTION ====================
+    selectCountry(id) {
+        const countries = GameState.getCurrentCountries();
+        const c = countries[id];
+        if (!c) return;
+
+        if (c.owner === 'player') {
+            this.notify('🏴 Your Land', `${c.name} is already yours.`);
+            return;
+        }
+
+        const isAdjacent = GameState.player.territories.some(tId => {
+            const t = countries[tId];
+            return t && t.adjacent && t.adjacent.includes(id);
+        });
+
+        if (!isAdjacent) {
+            SFX.error();
+            this.notify('❌ Not Adjacent', `${c.name} does not share a border with your territories.`);
+            return;
+        }
+
+        if (GameState.cooldowns.global > 0) {
+            SFX.error();
+            this.notify('⏳ Cooldown', `Global cooldown: ${Math.ceil(GameState.cooldowns.global)}s remaining.`);
+            return;
+        }
+
+        SFX.battleStart();
+        this.openBattlefield(id);
+    }
+
+    // ==================== BATTLEFIELD ====================
+    openBattlefield(defId) {
+        const countries = GameState.getCurrentCountries();
+        const defender = countries[defId];
+        if (!defender) return;
+
+        GameState.battle.active = true;
+        GameState.battle.attacker = 'player';
+        GameState.battle.defender = defId;
+        GameState.battle.turn = 0;
+
+        const attMil = GameState.player.cards.reduce((s, c) => s + c.military, 0) || 1;
+
+        document.getElementById('battle-attacker-name').textContent = GameState.player.countryName;
+        document.getElementById('battle-attacker-pop').textContent = (GameState.player.population / 1000).toFixed(1) + 'k';
+        document.getElementById('battle-defender-name').textContent = defender.name;
+        document.getElementById('battle-defender-pop').textContent = (defender.pop / 1000).toFixed(1) + 'k';
+        document.getElementById('battlefield-log').innerHTML = `<div>⚔️ Battle begins! ${GameState.player.countryName} vs ${defender.name}</div>`;
+        document.getElementById('battlefield-auto-btn').textContent = 'Auto Battle';
+
+        this.battlefield.classList.add('active');
+    }
+
+    doTurn() {
+        if (!GameState.battle.active) {
+            clearInterval(GameState.battle.interval);
+            return;
+        }
+
+        GameState.battle.turn++;
+        const countries = GameState.getCurrentCountries();
+        const attacker = GameState.player;
+        const defender = countries[GameState.battle.defender];
+        if (!defender) { this.closeBattlefield(); return; }
+
+        const attMil = attacker.cards.reduce((s, c) => s + c.military, 0) || 1;
+        const defMil = defender.military || 1;
+        const attDmg = defMil * 1000;
+        const defDmg = attMil * 1000;
+
+        attacker.population = Math.max(0, attacker.population - attDmg);
+        defender.pop = Math.max(0, defender.pop - defDmg);
+
+        document.getElementById('battle-attacker-pop').textContent = (attacker.population / 1000).toFixed(1) + 'k';
+        document.getElementById('battle-defender-pop').textContent = (defender.pop / 1000).toFixed(1) + 'k';
+
+        const log = document.getElementById('battlefield-log');
+        log.innerHTML += `<div>Turn ${GameState.battle.turn}: You -${(attDmg/1000).toFixed(0)}k | ${defender.name} -${(defDmg/1000).toFixed(0)}k</div>`;
+        log.scrollTop = log.scrollHeight;
+
+        if (attacker.population <= 0) { this.endBattle('defender'); return; }
+        if (defender.pop <= 0) { this.endBattle('attacker'); return; }
+    }
+
+    toggleAutoBattle() {
+        if (GameState.battle.interval) {
+            clearInterval(GameState.battle.interval);
+            GameState.battle.interval = null;
+            document.getElementById('battlefield-auto-btn').textContent = 'Auto Battle';
+        } else {
+            GameState.battle.interval = setInterval(() => this.doTurn(), 500);
+            document.getElementById('battlefield-auto-btn').textContent = 'Stop Auto';
+        }
+    }
+
+    retreatBattle() {
+        this.endBattle('defender');
+    }
+
+    closeBattlefield() {
+        clearInterval(GameState.battle.interval);
+        GameState.battle.interval = null;
+        GameState.battle.active = false;
+        this.battlefield.classList.remove('active');
+    }
+
+    endBattle(winner) {
+        clearInterval(GameState.battle.interval);
+        GameState.battle.interval = null;
+        GameState.battle.active = false;
+
+        const countries = GameState.getCurrentCountries();
+        const defender = countries[GameState.battle.defender];
+        if (!defender) { this.closeBattlefield(); return; }
+
+        const log = document.getElementById('battlefield-log');
+
+        if (winner === 'attacker') {
+            // VICTORY
+            GameState.player.territories.push(GameState.battle.defender);
+            defender.owner = 'player';
+            defender.pop = 20000;
+
+            let reward = Math.min(GameState.player.level, 10);
+            let extraMsg = '';
+
+            // Treasure chest check
+            if (GameState.chests[GameState.battle.defender]) {
+                const tokens = Math.floor(Math.random() * 20) + 1;
+                GameState.player.tokens += tokens;
+                reward += tokens;
+
+                const rarityPool = ['rare', 'superRare', 'metropolis', 'mythic'];
+                const rarity = rarityPool[Math.floor(Math.random() * rarityPool.length)];
+                const rd = GameState.cardRarities[rarity];
+                const card = {
+                    id: Date.now(),
+                    rarity: rarity,
+                    airports: Math.floor(Math.random() * (rd.max.a - rd.min.a + 1)) + rd.min.a,
+                    trains: Math.floor(Math.random() * (rd.max.t - rd.min.t + 1)) + rd.min.t,
+                    military: Math.floor(Math.random() * (rd.max.m - rd.min.m + 1)) + rd.min.m
+                };
+                GameState.player.cards.push(card);
+                delete GameState.chests[GameState.battle.defender];
+                extraMsg = ` | 🧰 Treasure! +${tokens} tokens & ${rarity} card!`;
+            }
+
+            GameState.player.tokens += reward;
+            SFX.victory();
+            this.notify('🏆 Victory!', `${defender.name} conquered!${extraMsg}`);
+            log.innerHTML += `<div style="color:var(--neon-green);">🏆 VICTORY! ${defender.name} is yours!${extraMsg}</div>`;
+
+            // Level up check
+            const newLevel = Math.floor(GameState.player.population / 20000) + 1;
+            if (newLevel > GameState.player.level) {
+                GameState.player.level = newLevel;
+                SFX.levelUp();
+                setTimeout(() => this.notify('⬆️ Level Up!', `You reached level ${newLevel}!`), 1000);
+            }
+
+            // Check Mars unlock
+            this.checkMarsUnlock();
+
+        } else {
+            // DEFEAT
+            GameState.player.population = Math.max(0, Math.floor(GameState.player.population * 0.88));
+            SFX.defeat();
+            this.notify('💀 Defeat', `Your army was defeated by ${defender.name}.`);
+            log.innerHTML += '<div style="color:var(--neon-pink);">💀 DEFEAT! Your forces retreated.</div>';
+        }
+
+        // Cooldown
+        GameState.cooldowns.global = 30;
+
+        // Close battlefield after delay
+        setTimeout(() => {
+            this.battlefield.classList.remove('active');
+            this.drawMap();
+            this.updateUI();
+        }, 2000);
+    }
+
+    // ==================== CARD SHOP ====================
+    buyCardPack() {
+        if (GameState.player.tokens < 5) {
+            SFX.error();
+            this.notify('💰 Not Enough', 'You need 5 tokens for a Basic Pack.');
+            return;
+        }
+        GameState.player.tokens -= 5;
+        SFX.cardOpen();
+
+        let cum = 0, rarity = 'common';
+        const rand = Math.random() * 100;
+        for (const [r, d] of Object.entries(GameState.cardRarities)) {
+            cum += d.weight;
+            if (rand <= cum) { rarity = r; break; }
+        }
+
+        const rd = GameState.cardRarities[rarity];
+        const card = {
+            id: Date.now(),
+            rarity: rarity,
+            airports: Math.floor(Math.random() * (rd.max.a - rd.min.a + 1)) + rd.min.a,
+            trains: Math.floor(Math.random() * (rd.max.t - rd.min.t + 1)) + rd.min.t,
+            military: Math.floor(Math.random() * (rd.max.m - rd.min.m + 1)) + rd.min.m
+        };
+        GameState.player.cards.push(card);
+
+        this.notify('🃏 Card Obtained!', `${rarity.toUpperCase()} — A:${card.airports} T:${card.trains} M:${card.military}`);
+        this.updateCards();
+        this.updateUI();
+    }
+
+    updateCards() {
+        const inv = document.getElementById('cards-inventory');
+        inv.innerHTML = '';
+        if (!GameState.player.cards.length) {
+            inv.innerHTML = '<p style="color:var(--text-secondary);">No cards yet. Buy a pack!</p>';
+            return;
+        }
+        GameState.player.cards.forEach(c => {
+            const div = document.createElement('div');
+            div.className = `card ${c.rarity}`;
+            div.innerHTML = `
+                <div class="card-rarity">${c.rarity.toUpperCase()}</div>
+                <div class="card-stats">
+                    <div>🛩️ Airports: ${c.airports}</div>
+                    <div>🚂 Trains: ${c.trains}</div>
+                    <div>⚔️ Military: ${c.military}</div>
+                </div>`;
+            inv.appendChild(div);
+        });
+    }
+
+    redeemGiftCode() {
+        const code = document.getElementById('gift-code-input').value.trim();
+        if (!code) return;
+
+        const gift = GameState.giftCodes[code];
+        if (!gift || GameState.usedGiftCodes.includes(code)) {
+            SFX.error();
+            this.notify('❌ Invalid', 'Code does not exist or already used.');
+            return;
+        }
+
+        if (gift.type === 'tokens') {
+            GameState.player.tokens += gift.value;
+            this.notify('✅ Redeemed!', `+${gift.value} tokens added.`);
+        } else if (gift.type === 'card') {
+            const rd = GameState.cardRarities.legendary;
+            const card = {
+                id: Date.now(),
+                rarity: 'legendary',
+                airports: Math.floor(Math.random() * (rd.max.a - rd.min.a + 1)) + rd.min.a,
+                trains: Math.floor(Math.random() * (rd.max.t - rd.min.t + 1)) + rd.min.t,
+                military: Math.floor(Math.random() * (rd.max.m - rd.min.m + 1)) + rd.min.m
+            };
+            GameState.player.cards.push(card);
+            this.notify('🌟 Legendary!', 'Legendary card added to your inventory!');
+            this.updateCards();
+        }
+
+        GameState.usedGiftCodes.push(code);
+        document.getElementById('gift-code-input').value = '';
+        this.updateUI();
+    }
+
+    // ==================== CONNECTIONS ====================
+    createConnection() {
+        const cardId = parseInt(document.getElementById('connect-card-select').value);
+        const countryId = document.getElementById('connect-country-select').value;
+        const type = document.getElementById('connect-type-select').value;
+        const card = GameState.player.cards.find(c => c.id === cardId);
+
+        if (!card || !countryId) {
+            SFX.error();
+            this.notify('❌ Error', 'Select a card and a country.');
+            return;
+        }
+        if (getCardAvailablePoints(card, type) <= 0) {
+            SFX.error();
+            this.notify('❌ No Points', `Card has no unused ${type} points.`);
+            return;
+        }
+        if (getAvailableInfra(countryId, type) <= 0) {
+            SFX.error();
+            this.notify('❌ No Infrastructure', `Country has no available ${type}.`);
+            return;
+        }
+
+        GameState.connections.push({
+            id: Date.now(),
+            cardId: card.id,
+            countryId: countryId,
+            type: type
+        });
+
+        this.updateConnectionScreen();
+        this.updateUI();
+        SFX.notification();
+        this.notify('🔗 Connected!', `${type} connection established.`);
+    }
+
+    cancelConnection(connId) {
+        GameState.connections = GameState.connections.filter(c => c.id !== connId);
+        this.updateConnectionScreen();
+        this.updateUI();
+        SFX.notification();
+        this.notify('🔌 Cancelled', 'Connection removed.');
+    }
+
+    updateConnectionScreen() {
+        const list = document.getElementById('connection-list');
+        list.innerHTML = '';
+
+        if (!GameState.connections.length) {
+            list.innerHTML = '<p style="color:var(--text-secondary);">No active connections.</p>';
+        }
+
+        GameState.connections.forEach(con => {
+            const card = GameState.player.cards.find(c => c.id === con.cardId);
+            const countries = GameState.getCurrentCountries();
+            const country = countries[con.countryId];
+
+            const div = document.createElement('div');
+            div.className = 'connection-item';
+            div.innerHTML = `
+                <span>${card ? card.rarity.toUpperCase() : '?'} → ${country ? country.name : '?'} (${con.type})</span>
+                <button class="cancel-connection-btn">❌</button>`;
+            div.querySelector('.cancel-connection-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.cancelConnection(con.id);
+            });
+            div.querySelector('.cancel-connection-btn').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.cancelConnection(con.id);
+            });
+            list.appendChild(div);
+        });
+
+        this.populateConnectionDropdowns();
+    }
+
+    populateConnectionDropdowns() {
+        // Card select
+        const cardSel = document.getElementById('connect-card-select');
+        cardSel.innerHTML = '';
+        GameState.player.cards.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = `${c.rarity.toUpperCase()} (A:${getCardAvailablePoints(c,'airports')} T:${getCardAvailablePoints(c,'trains')} M:${getCardAvailablePoints(c,'military')})`;
+            cardSel.appendChild(opt);
+        });
+
+        // Country select
+        const countrySel = document.getElementById('connect-country-select');
+        countrySel.innerHTML = '';
+        const countries = GameState.getCurrentCountries();
+        const adjacentIds = [...new Set(GameState.player.territories.flatMap(tId => {
+            const t = countries[tId];
+            return t && t.adjacent ? t.adjacent : [];
+        }))];
+
+        adjacentIds.forEach(id => {
+            const c = countries[id];
+            if (c && c.owner !== 'player') {
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = `${c.name} (A:${getAvailableInfra(id,'airports')} T:${getAvailableInfra(id,'trains')} M:${getAvailableInfra(id,'military')})`;
+                countrySel.appendChild(opt);
+            }
+        });
+
+        this.updateConnectionInfo();
+    }
+
+    updateConnectionInfo() {
+        const cardId = parseInt(document.getElementById('connect-card-select').value);
+        const countryId = document.getElementById('connect-country-select').value;
+        const type = document.getElementById('connect-type-select').value;
+        const card = GameState.player.cards.find(c => c.id === cardId);
+
+        let msg = '';
+        if (card && countryId) {
+            const cardAvail = getCardAvailablePoints(card, type);
+            const countryAvail = getAvailableInfra(countryId, type);
+            msg = `Card: ${cardAvail} unused ${type} | Target: ${countryAvail} available.`;
+        }
+        document.getElementById('connect-feedback').textContent = msg;
+    }
+
+    collectDailyIncome() {
+        const now = Date.now();
+        if (GameState.lastDailyCollect && now - GameState.lastDailyCollect < 86400000) {
+            const remaining = Math.ceil((86400000 - (now - GameState.lastDailyCollect)) / 3600000);
+            this.notify('⏳ Already Collected', `Come back in ~${remaining} hours.`);
+            return;
+        }
+
+        const tokens = GameState.connections.length;
+        if (tokens === 0) {
+            this.notify('🔌 No Connections', 'Establish connections to earn daily tokens.');
+            return;
+        }
+
+        GameState.player.tokens += tokens;
+        GameState.lastDailyCollect = now;
+        this.updateUI();
+        SFX.notification();
+        this.notify('💰 Daily Income', `+${tokens} tokens from your connections!`);
+    }
+
+    // ==================== ALLIANCE ====================
+    createAlliance() {
+        if (GameState.player.tokens < 50) {
+            SFX.error();
+            this.notify('💰 Need 50 Tokens', 'Not enough tokens to create an alliance.');
+            return;
+        }
+        if (GameState.player.alliance) {
+            SFX.error();
+            this.notify('❌ Already in Alliance', 'Leave your current alliance first.');
+            return;
+        }
+
+        GameState.player.tokens -= 50;
+        const id = `a_${GameState.alliances.nextId++}`;
+        GameState.alliances.list[id] = {
+            name: `${GameState.player.countryName} Alliance`,
+            players: ['player']
+        };
+        GameState.player.alliance = id;
+
+        this.updateAlliances();
+        this.updateUI();
+        SFX.notification();
+        this.notify('🤝 Alliance Created', `${GameState.alliances.list[id].name} is now active!`);
+    }
+
+    updateAlliances() {
+        const currentDiv = document.getElementById('current-alliance');
+
+        if (GameState.player.alliance) {
+            const all = GameState.alliances.list[GameState.player.alliance];
+            if (all) {
+                currentDiv.innerHTML = `
+                    <p style="color:var(--neon-green);font-size:1.1rem;">🤝 ${all.name}</p>
+                    <p style="font-size:0.85rem;">Members: ${all.players.length}</p>
+                    <button class="btn btn-pink btn-small" id="leave-alliance-btn">Leave Alliance</button>`;
+                document.getElementById('leave-alliance-btn').addEventListener('click', () => this.leaveAlliance());
+                document.getElementById('leave-alliance-btn').addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.leaveAlliance();
+                });
+            }
+        } else {
+            currentDiv.innerHTML = `
+                <p style="color:var(--text-secondary);">You are not in an alliance.</p>
+                <button class="btn" data-action="create-alliance">Create Alliance (50 tokens)</button>`;
+        }
+
+        // Alliance list
+        const listDiv = document.getElementById('alliance-list');
+        listDiv.innerHTML = '<h3 style="color:var(--neon-blue);margin-bottom:10px;">Available Alliances</h3>';
+
+        const alliances = Object.entries(GameState.alliances.list);
+        if (!alliances.length) {
+            listDiv.innerHTML += '<p style="color:var(--text-secondary);">No alliances yet. Create one!</p>';
+            return;
+        }
+
+        alliances.forEach(([id, all]) => {
+            const div = document.createElement('div');
+            div.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--panel-bg);margin-bottom:5px;border-radius:5px;';
+            div.innerHTML = `
+                <span>${all.name} <small>(${all.players.length} members)</small></span>
+                <button class="btn btn-small join-alliance-btn" data-alliance-id="${id}">Join</button>`;
+            div.querySelector('.join-alliance-btn').addEventListener('click', (e) => {
+                if (GameState.player.alliance) return;
+                const aid = e.target.dataset.allianceId;
+                GameState.alliances.list[aid].players.push('player');
+                GameState.player.alliance = aid;
+                this.updateAlliances();
+                SFX.notification();
+            });
+            listDiv.appendChild(div);
+        });
+    }
+
+    leaveAlliance() {
+        if (!GameState.player.alliance) return;
+        const all = GameState.alliances.list[GameState.player.alliance];
+        if (all) {
+            all.players = all.players.filter(p => p !== 'player');
+            if (!all.players.length) delete GameState.alliances.list[GameState.player.alliance];
+        }
+        GameState.player.alliance = null;
+        GameState.player.allianceCooldown = Date.now() + 7 * 24 * 60 * 60 * 1000;
+        this.updateAlliances();
+        SFX.notification();
+        this.notify('👋 Left Alliance', 'You have left the alliance.');
+    }
+
+    // ==================== QUIZ ====================
+    startQuiz() {
+        if (GameState.player.quizTaken) {
+            this.notify('📚 Already Done', 'You have already completed the quiz.');
+            return;
+        }
+        GameState.quizScore = 0;
+        GameState.quizCurrentQuestion = 0;
+        document.getElementById('quiz-intro').style.display = 'none';
+        document.getElementById('quiz-question').style.display = 'block';
+        document.getElementById('quiz-result').style.display = 'none';
+        this.showQuizQuestion();
+    }
+
+    showQuizQuestion() {
+        if (GameState.quizCurrentQuestion >= GameState.quizQuestions.length) {
+            this.endQuiz();
+            return;
+        }
+
+        const q = GameState.quizQuestions[GameState.quizCurrentQuestion];
+        document.getElementById('quiz-current').textContent = GameState.quizCurrentQuestion + 1;
+        document.getElementById('quiz-question-text').textContent = q.q;
+
+        const optDiv = document.getElementById('quiz-options');
+        optDiv.innerHTML = '';
+        q.opts.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-small';
+            btn.textContent = opt;
+            btn.style.marginBottom = '6px';
+            btn.style.width = '100%';
+            btn.addEventListener('click', () => {
+                if (opt === q.a) GameState.quizScore++;
+                GameState.quizCurrentQuestion++;
+                this.showQuizQuestion();
+            });
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (opt === q.a) GameState.quizScore++;
+                GameState.quizCurrentQuestion++;
+                this.showQuizQuestion();
+            });
+            optDiv.appendChild(btn);
+        });
+    }
+
+    endQuiz() {
+        GameState.player.quizTaken = true;
+        GameState.player.tokens += GameState.quizScore;
+        document.getElementById('quiz-question').style.display = 'none';
+        document.getElementById('quiz-result').style.display = 'block';
+        document.getElementById('quiz-correct-count').textContent = GameState.quizScore;
+        document.getElementById('quiz-tokens-earned').textContent = GameState.quizScore;
+        this.updateUI();
+        SFX.notification();
+        this.notify('📚 Quiz Complete!', `You earned ${GameState.quizScore} tokens.`);
+    }
+
+    // ==================== GAME LOOP ====================
+    startGameLoop() {
+        // Cooldown timer
+        setInterval(() => {
+            if (GameState.cooldowns.global > 0) {
+                GameState.cooldowns.global = Math.max(0, GameState.cooldowns.global - 0.1);
+            }
+            const cd = document.getElementById('cooldown-timer-display');
+            if (GameState.cooldowns.global > 0) {
+                cd.style.display = 'block';
+                document.getElementById('cooldown-timer-value').textContent = Math.ceil(GameState.cooldowns.global);
+            } else {
+                cd.style.display = 'none';
+            }
+        }, 100);
+
+        // Population growth: territories × cards × 50 every 10 seconds
+        setInterval(() => {
+            if (!GameState.player.signedUp) return;
+            const territories = GameState.player.territories.length;
+            const cards = GameState.player.cards.length;
+            const growth = territories * cards * 50;
+            if (growth > 0) {
+                GameState.player.population += growth;
+                this.updateUI();
+            }
+        }, 10000);
+
+        // Update play time every second
+        setInterval(() => {
+            GameState.gameTime++;
+            const el = document.getElementById('play-time');
+            if (el) {
+                const h = Math.floor(GameState.gameTime / 3600);
+                const m = Math.floor((GameState.gameTime % 3600) / 60);
+                const s = Math.floor(GameState.gameTime % 60);
+                el.textContent = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+            }
+        }, 1000);
+    }
+
+    updateUI() {
+        document.getElementById('token-count').textContent = GameState.player.tokens;
+        document.getElementById('population-count').textContent = (GameState.player.population / 1000).toFixed(0) + 'k';
+        document.getElementById('level-count').textContent = Math.floor(GameState.player.population / 20000) + 1;
+        document.getElementById('territory-count').textContent = GameState.player.territories.length;
+        document.getElementById('connection-count').textContent = GameState.connections.length;
+
+        // Earth percentage
+        if (GameState.player.signedUp) {
+            const total = Object.keys(GameState.countries).length;
+            const owned = Object.values(GameState.countries).filter(c => c.owner === 'player').length;
+            document.getElementById('earth-percent').textContent = Math.round((owned / total) * 100) + '%';
+        }
+    }
+
+    // ==================== SCREEN MANAGEMENT ====================
+    showScreen(name) {
+        Object.values(this.screens).forEach(s => s.classList.remove('active'));
+        if (this.screens[name]) this.screens[name].classList.add('active');
+
+        if (name === 'map') {
+            this.drawMap();
+            this.checkMarsUnlock();
+        }
+        if (name === 'setup') this.populateStartingCountries();
+        if (name === 'connection') this.updateConnectionScreen();
+        if (name === 'card') this.updateCards();
+        if (name === 'alliance') this.updateAlliances();
+        if (name === 'quiz') {
+            document.getElementById('quiz-intro').style.display = 'block';
+            document.getElementById('quiz-question').style.display = 'none';
+            document.getElementById('quiz-result').style.display = 'none';
+        }
+    }
+
+    // ==================== SAVE / LOAD / EXPORT / IMPORT ====================
+    saveGame() {
+        try {
+            localStorage.setItem('warxone_save', JSON.stringify(GameState));
+            SFX.notification();
+            this.notify('💾 Saved', 'Game saved successfully!');
+        } catch(e) {
+            SFX.error();
+            this.notify('❌ Error', 'Failed to save game.');
+        }
+    }
+
+    loadGame() {
+        const data = localStorage.getItem('warxone_save');
+        if (!data) {
+            SFX.error();
+            this.notify('📂 No Save', 'No saved game found.');
+            return;
+        }
+        try {
+            const parsed = JSON.parse(data);
+            Object.assign(GameState, parsed);
+            GameState.lastTick = Date.now();
+            this.showScreen('map');
+            this.drawMap();
+            this.updateUI();
+            document.getElementById('player-flag').textContent = GameState.player.flag;
+            this.applyTranslations();
+            SFX.notification();
+            this.notify('📂 Loaded', 'Your conquest continues!');
+        } catch(e) {
+            SFX.error();
+            this.notify('❌ Corrupted', 'Save file is damaged.');
+        }
+    }
+
+    resetGame() {
+        if (confirm('⚠️ Reset ALL progress? This cannot be undone.')) {
+            localStorage.removeItem('warxone_save');
+            location.reload();
+        }
+    }
+
+    exportSave() {
+        const blob = new Blob([JSON.stringify(GameState, null, 2)], {type: 'application/json'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `warxone_save_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+        this.notify('📤 Exported', 'Save file downloaded.');
+    }
+
+    importSave() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    Object.assign(GameState, data);
+                    GameState.lastTick = Date.now();
+                    this.showScreen('map');
+                    this.drawMap();
+                    this.updateUI();
+                    document.getElementById('player-flag').textContent = GameState.player.flag;
+                    this.applyTranslations();
+                    SFX.notification();
+                    this.notify('📥 Imported', 'Game data loaded successfully!');
+                } catch(ex) {
+                    SFX.error();
+                    this.notify('❌ Invalid', 'The file is not a valid WarXone save.');
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    }
+
+    // ==================== SIGNUP & SETUP ====================
+    handleSignUp() {
+        const email = document.getElementById('signup-email').value.trim();
+        const pass = document.getElementById('signup-password').value;
+        const confirm = document.getElementById('signup-confirm-password').value;
+
+        if (!email) { SFX.error(); this.notify('❌ Missing', 'Email is required.'); return; }
+        if (pass.length < 8) { SFX.error(); this.notify('❌ Too Short', 'Password must be at least 8 characters.'); return; }
+        if (pass !== confirm) { SFX.error(); this.notify('❌ Mismatch', 'Passwords do not match.'); return; }
+
+        GameState.player.email = email;
+        GameState.player.signedUp = true;
+        GameState.player.tokens = 10;
+        GameState.player.createdAt = new Date().toISOString();
+
+        SFX.notification();
+        this.notify('✅ Signed Up!', '10 bonus tokens granted.');
+        this.showScreen('setup');
+    }
+
+    startNewGame() {
+        const countryName = document.getElementById('country-name').value.trim() || "Ironhaven";
+        const capitalName = document.getElementById('capital-name').value.trim() || "Fortress";
+        const flag = document.getElementById('flag-select').value;
+        const startCountry = document.getElementById('starting-country').value;
+
+        if (!GameState.countries[startCountry] || !GameState.countries[startCountry].adjacent.length) {
+            SFX.error();
+            this.notify('❌ Invalid', 'Choose a country with neighbours.');
+            return;
+        }
+
+        GameState.player.countryName = countryName;
+        GameState.player.capitalName = capitalName;
+        GameState.player.flag = flag;
+        GameState.player.startingCountry = startCountry;
+        GameState.player.territories = [startCountry];
+        GameState.player.population = 20000;
+        GameState.player.level = 1;
+        GameState.player.cards = [];
+        GameState.player.alliance = null;
+        GameState.player.marsUnlocked = false;
+        GameState.player.currentWorld = 'earth';
+
+        GameState.countries[startCountry].owner = 'player';
+        GameState.connections = [];
+        GameState.chests = {};
+        GameState.marsStoryShown = false;
+        GameState.lastDailyCollect = null;
+
+        // Place treasure chests on random AI countries
+        this.placeRandomChests();
+
+        this.showScreen('map');
+        this.drawMap();
+        document.getElementById('player-flag').textContent = flag;
+
+        SFX.notification();
+        this.notify('🌍 Game Started', `Welcome, ${countryName}! Conquer the world!`);
+    }
+
+    populateStartingCountries() {
+        const sel = document.getElementById('starting-country');
+        sel.innerHTML = '';
+        for (const [id, c] of Object.entries(GameState.countries)) {
+            if (c.adjacent && c.adjacent.length > 0) {
+                const opt = document.createElement('option');
+                opt.value = id;
+                opt.textContent = c.name;
+                sel.appendChild(opt);
+            }
+        }
+    }
+
+    placeRandomChests() {
+        const aiCountries = Object.keys(GameState.countries).filter(id => GameState.countries[id].owner === 'ai');
+        const count = Math.min(8, aiCountries.length);
+        const shuffled = aiCountries.sort(() => 0.5 - Math.random()).slice(0, count);
+        GameState.chests = {};
+        shuffled.forEach(id => GameState.chests[id] = true);
+    }
+
+    // ==================== TRANSLATIONS ====================
+    applyTranslations() {
+        const t = translations[GameState.player.language] || translations.en;
+        if (!t) return;
+
+        // Main menu
+        document.querySelector('.logo').textContent = t.mainMenu.title;
+        document.querySelector('.tagline').textContent = t.mainMenu.tagline;
+        const btns = document.querySelectorAll('#main-menu [data-action]');
+        btns.forEach(btn => {
+            const map = { 'new-game': 'newGame', 'load-game': 'loadGame', 'story': 'story', 'settings': 'settings', 'how-to-play': 'howToPlay' };
+            const key = map[btn.dataset.action];
+            if (key && t.mainMenu[key]) btn.textContent = t.mainMenu[key];
+        });
+
+        // Signup
+        const signupH1 = document.querySelector('#signup-screen h1');
+        if (signupH1) signupH1.textContent = t.signup.title;
+        document.querySelector('label[for="signup-email"]').textContent = t.signup.email;
+        document.querySelector('label[for="signup-password"]').textContent = t.signup.password;
+        document.querySelector('label[for="signup-confirm-password"]').textContent = t.signup.confirm;
+        document.querySelector('[data-action="signup"]').textContent = t.signup.btn;
+        document.querySelector('#signup-screen [data-action="back-to-menu"]').textContent = t.signup.back;
+
+        // Setup
+        const setupH1 = document.querySelector('#setup-screen h1');
+        if (setupH1) setupH1.textContent = t.setup.title;
+        document.querySelector('label[for="country-name"]').textContent = t.setup.countryName;
+        document.querySelector('label[for="capital-name"]').textContent = t.setup.capitalName;
+        document.querySelector('label[for="flag-select"]').textContent = t.setup.flag;
+        document.querySelector('label[for="starting-country"]').textContent = t.setup.startingCountry;
+        document.querySelector('[data-action="start-game"]').textContent = t.setup.startBtn;
+        document.querySelector('#setup-screen [data-action="back-to-menu"]').textContent = t.setup.backBtn;
+
+        // Map dashboard
+        const infoLabels = document.querySelectorAll('.info-label');
+        if (infoLabels.length >= 6) {
+            infoLabels[0].textContent = t.map.tokens;
+            infoLabels[1].textContent = t.map.pop;
+            infoLabels[2].textContent = t.map.lvl;
+            infoLabels[3].textContent = t.map.land;
+            infoLabels[4].textContent = t.map.conns;
+            infoLabels[5].textContent = t.map.earthPercent;
+        }
+
+        // Tutorial
+        document.getElementById('tutorial-title').textContent = t.tutorial.title;
+        document.getElementById('tutorial-text').innerText = t.tutorial.text;
+    }
+
+    // ==================== NOTIFICATIONS ====================
+    notify(title, msg) {
+        const notif = document.getElementById('notification');
+        notif.querySelector('.notification-title').textContent = title;
+        notif.querySelector('.notification-message').textContent = msg;
+        notif.classList.add('show');
+        clearTimeout(this._notifTimer);
+        this._notifTimer = setTimeout(() => notif.classList.remove('show'), 3000);
+    }
+}
+
+// ==================== START GAME ====================
+window.addEventListener('DOMContentLoaded', () => new WarXoneGame());
+</script>
+</body>
+</html>
