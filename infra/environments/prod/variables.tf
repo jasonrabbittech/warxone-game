@@ -7,7 +7,7 @@ variable "region" {
 variable "app_id" {
   description = "Tencent Cloud APPID"
   type        = string
-  default     = "1328140161"
+  default     = "1376958570"
 }
 
 variable "project_name" {
