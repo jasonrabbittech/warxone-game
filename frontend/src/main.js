@@ -18,9 +18,18 @@ import { SFX, playTone, getAudioCtx } from './audio/SoundEngine.js';
 // i18n
 import { t, setLanguage, getCurrentLanguage } from './i18n/index.js';
 
-// API stub (localStorage for now, will be replaced with real API in Phase 3)
+// API client
+import { auth, game, isLoggedIn, getStoredUser, getAccessToken, clearAuthData } from './api/client.js';
+
+// API layer: uses cloud API when logged in, localStorage as fallback
 const api = {
-    save(state) {
+    async save(state) {
+        if (isLoggedIn()) {
+            const result = await game.save(state);
+            if (result.success) return true;
+            console.warn('Cloud save failed, falling back to localStorage:', result.error);
+        }
+        // Fallback to localStorage
         try {
             localStorage.setItem('warxone_save', JSON.stringify(state));
             return true;
@@ -29,7 +38,13 @@ const api = {
             return false;
         }
     },
-    load() {
+    async load() {
+        if (isLoggedIn()) {
+            const result = await game.load();
+            if (result.success && result.data) return result.data.gameState;
+            console.warn('Cloud load failed, falling back to localStorage:', result.error);
+        }
+        // Fallback to localStorage
         try {
             const data = localStorage.getItem('warxone_save');
             return data ? JSON.parse(data) : null;
@@ -38,7 +53,10 @@ const api = {
             return null;
         }
     },
-    delete() {
+    async delete() {
+        if (isLoggedIn()) {
+            await game.deleteSave().catch(() => {});
+        }
         localStorage.removeItem('warxone_save');
     }
 };
@@ -52,6 +70,7 @@ function createGame() {
         document.getElementById('game-container').addEventListener('click', (e) => {
             const btn = e.target.closest('[data-action]');
             if (!btn) return;
+            e.preventDefault(); // Prevent default for links and forms
             handleAction(btn.dataset.action, btn, e);
         });
     }
@@ -61,6 +80,12 @@ function createGame() {
         switch (action) {
             case 'new-game': showScreen('signup-screen'); break;
             case 'load-game': loadGame(); break;
+            case 'login-screen': showScreen('login-screen'); break;
+            case 'login': handleLogin(); break;
+            case 'login-google': handleGoogleLogin(); break;
+            case 'show-signup': showScreen('signup-screen'); break;
+            case 'show-login': showScreen('login-screen'); break;
+            case 'logout': handleLogout(); break;
             case 'story': showStory(); break;
             case 'settings': showScreen('settings-screen'); break;
             case 'how-to-play': showTutorial(); break;
@@ -101,24 +126,112 @@ function createGame() {
 
     // ---- Auth ----
     function checkAutoLogin() {
-        const saved = api.load();
-        if (saved && saved.player && saved.player.signedUp) {
-            // Auto-login is available
+        const user = getStoredUser();
+        if (user) {
+            updateLoggedInUI(user);
         }
     }
 
-    function handleSignup() {
+    function updateLoggedInUI(user) {
+        const indicator = document.getElementById('logged-in-indicator');
+        const emailEl = document.getElementById('logged-in-email');
+        if (indicator && emailEl && user) {
+            emailEl.textContent = user.email || '';
+            indicator.style.display = 'flex';
+        }
+    }
+
+    function showAuthError(elementId, message) {
+        const el = document.getElementById(elementId);
+        if (el) {
+            el.textContent = message;
+            el.style.display = 'block';
+        }
+    }
+
+    function hideAuthError(elementId) {
+        const el = document.getElementById(elementId);
+        if (el) el.style.display = 'none';
+    }
+
+    async function handleSignup() {
         const email = document.getElementById('signup-email').value.trim();
         const pw = document.getElementById('signup-password').value;
         const confirm = document.getElementById('signup-confirm-password').value;
-        if (!email || !pw) { notify('Error', 'Please fill all fields'); SFX.error(); return; }
-        if (pw.length < 8) { notify('Error', 'Password must be at least 8 characters'); SFX.error(); return; }
-        if (pw !== confirm) { notify('Error', 'Passwords do not match'); SFX.error(); return; }
-        GameState.player.email = email;
-        GameState.player.signedUp = true;
-        GameState.player.createdAt = Date.now();
-        showScreen('setup-screen');
-        populateStartingCountries();
+        hideAuthError('signup-error');
+
+        if (!email || !pw) { showAuthError('signup-error', 'Please fill all fields'); SFX.error(); return; }
+        if (pw.length < 8) { showAuthError('signup-error', 'Password must be at least 8 characters'); SFX.error(); return; }
+        if (pw !== confirm) { showAuthError('signup-error', 'Passwords do not match'); SFX.error(); return; }
+
+        try {
+            const result = await auth.register(email, pw);
+            if (result.success) {
+                updateLoggedInUI(result.data.user);
+                showScreen('setup-screen');
+                populateStartingCountries();
+            } else {
+                showAuthError('signup-error', result.error || 'Registration failed');
+                SFX.error();
+            }
+        } catch (err) {
+            showAuthError('signup-error', 'Network error. Please try again.');
+            SFX.error();
+        }
+    }
+
+    async function handleLogin() {
+        const email = document.getElementById('login-email').value.trim();
+        const pw = document.getElementById('login-password').value;
+        hideAuthError('login-error');
+
+        if (!email || !pw) { showAuthError('login-error', 'Please fill all fields'); SFX.error(); return; }
+
+        try {
+            const result = await auth.login(email, pw);
+            if (result.success) {
+                updateLoggedInUI(result.data.user);
+                // Try to load cloud save after login
+                const cloudSave = await game.load();
+                if (cloudSave.success && cloudSave.data && cloudSave.data.gameState) {
+                    Object.assign(GameState.player, cloudSave.data.gameState.player || {});
+                    GameState.connections = cloudSave.data.gameState.connections || [];
+                    GameState.chests = cloudSave.data.gameState.chests || {};
+                    GameState.usedGiftCodes = cloudSave.data.gameState.usedGiftCodes || [];
+                    GameState.cooldowns = cloudSave.data.gameState.cooldowns || { global: 0 };
+                    if (cloudSave.data.gameState.marsStoryShown) GameState.marsStoryShown = cloudSave.data.gameState.marsStoryShown;
+                    if (cloudSave.data.gameState.quizScore) GameState.quizScore = cloudSave.data.gameState.quizScore;
+
+                    showScreen('map-screen');
+                    drawMap();
+                    updateUI();
+                    startGameLoop();
+                    notify('Welcome Back', 'Cloud save loaded!');
+                } else {
+                    showScreen('setup-screen');
+                    populateStartingCountries();
+                }
+            } else {
+                showAuthError('login-error', result.error || 'Login failed');
+                SFX.error();
+            }
+        } catch (err) {
+            showAuthError('login-error', 'Network error. Please try again.');
+            SFX.error();
+        }
+    }
+
+    function handleGoogleLogin() {
+        // Phase D: Google SSO not yet configured
+        notify('Coming Soon', 'Google login will be available in a future update');
+    }
+
+    async function handleLogout() {
+        await auth.logout();
+        const indicator = document.getElementById('logged-in-indicator');
+        if (indicator) indicator.style.display = 'none';
+        notify('Logged Out', 'You have been logged out');
+        showScreen('main-menu');
     }
 
     // ---- Game Setup ----
@@ -450,12 +563,12 @@ function createGame() {
             savedAt: Date.now(),
             version: 1
         };
-        api.save(saveData);
+        api.save(saveData); // async but fire-and-forget for auto-save
     }
 
-    function loadGame() {
-        const saved = api.load();
-        if (!saved || !saved.player || !saved.player.signedUp) {
+    async function loadGame() {
+        const saved = await api.load();
+        if (!saved || !saved.player) {
             notify('No Save', 'No saved game found');
             return;
         }
@@ -545,8 +658,8 @@ function createGame() {
     function showAllianceScreen() { notify('Alliance', 'Alliance system coming in Phase 6'); }
     function showQuizScreen() { notify('Quiz', 'Quiz system coming in Phase 5'); }
     function showSettingsScreen() {
-        const data = JSON.stringify(GameState, null, 2);
-        notify('Settings', `Game data exported. Save: ${api.save({player: GameState.player, connections: GameState.connections, chests: GameState.chests, usedGiftCodes: GameState.usedGiftCodes, cooldowns: GameState.cooldowns}) ? 'OK' : 'Failed'}`);
+        saveGame(); // async save
+        notify('Settings', 'Game data saved');
     }
 
     function generateCard() {
@@ -592,7 +705,7 @@ function createGame() {
         const tagline = document.querySelector('.tagline');
         if (tagline) tagline.textContent = t('mainMenu.tagline');
         document.querySelectorAll('#main-menu [data-action]').forEach(btn => {
-            const map = { 'new-game': 'newGame', 'load-game': 'loadGame', 'story': 'story', 'settings': 'settings', 'how-to-play': 'howToPlay' };
+            const map = { 'new-game': 'newGame', 'load-game': 'loadGame', 'login-screen': 'login', 'story': 'story', 'settings': 'settings', 'how-to-play': 'howToPlay', 'logout': 'logout' };
             const key = map[btn.dataset.action];
             if (key) btn.textContent = t('mainMenu.' + key);
         });
@@ -610,6 +723,42 @@ function createGame() {
         if (signupBtn) signupBtn.textContent = t('signup.btn');
         const signupBack = document.querySelector('#signup-screen [data-action="back-to-menu"]');
         if (signupBack) signupBack.textContent = t('signup.back');
+
+        // Login screen
+        const loginH1 = document.querySelector('#login-screen h1');
+        if (loginH1) loginH1.textContent = t('auth.loginTitle');
+        const loginEmailLabel = document.querySelector('#login-screen label');
+        if (loginEmailLabel) loginEmailLabel.textContent = t('auth.email');
+        const loginPwLabel = document.querySelector('#login-screen label:nth-of-type(2)');
+        if (loginPwLabel) loginPwLabel.textContent = t('auth.password');
+        const loginBtn = document.querySelector('[data-action="login"]');
+        if (loginBtn) loginBtn.textContent = t('auth.loginBtn');
+        const googleBtn = document.querySelector('[data-action="login-google"]');
+        if (googleBtn) googleBtn.innerHTML = `<span class="google-icon">G</span> ${t('auth.googleBtn')}`;
+        const loginBack = document.querySelector('#login-screen [data-action="back-to-menu"]');
+        if (loginBack) loginBack.textContent = t('signup.back');
+        const logoutBtn = document.querySelector('[data-action="logout"]');
+        if (logoutBtn) logoutBtn.textContent = t('auth.logout');
+
+        // Auth switch links
+        const authSwitchLinks = document.querySelectorAll('.auth-switch a');
+        authSwitchLinks.forEach(link => {
+            if (link.dataset.action === 'show-signup') {
+                link.textContent = t('auth.signupLink');
+            } else if (link.dataset.action === 'show-login') {
+                link.textContent = t('auth.loginLink');
+            }
+        });
+        const authSwitchTexts = document.querySelectorAll('.auth-switch');
+        authSwitchTexts.forEach(el => {
+            if (el.querySelector('[data-action="show-signup"]')) {
+                el.innerHTML = `${t('auth.noAccount')} <a href="#" data-action="show-signup">${t('auth.signupLink')}</a>`;
+            } else if (el.querySelector('[data-action="show-login"]')) {
+                el.innerHTML = `${t('auth.hasAccount')} <a href="#" data-action="show-login">${t('auth.loginLink')}</a>`;
+            }
+        });
+        const divider = document.querySelector('.auth-divider span');
+        if (divider) divider.textContent = t('auth.orContinueWith');
 
         // Setup
         const setupH1 = document.querySelector('#setup-screen h1');

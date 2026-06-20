@@ -1,5 +1,6 @@
 export default {
-    mainMenu: { title:"WARXONE", tagline:"Conquer Earth & Mars", newGame:"New Game", loadGame:"Load Game", story:"The Story", settings:"Settings", howToPlay:"How to Play" },
+    mainMenu: { title:"WARXONE", tagline:"Conquer Earth & Mars", newGame:"New Game", loadGame:"Load Game", story:"The Story", settings:"Settings", howToPlay:"How to Play", login:"Login" },
+    auth: { loginTitle:"Login", email:"Email", password:"Password", loginBtn:"Login", noAccount:"Don't have an account?", signupLink:"Sign Up", hasAccount:"Already have an account?", loginLink:"Login", logout:"Logout", orContinueWith:"or continue with", googleBtn:"Sign in with Google" },
     signup: { title:"Sign Up", email:"Email", password:"Password (min 8)", confirm:"Confirm Password", btn:"Sign Up", back:"Back to Menu" },
     setup: { title:"Setup Your Country", countryName:"Country Name", capitalName:"Capital Name", flag:"Flag", startingCountry:"Starting Country", startBtn:"Start Game", backBtn:"Back to Menu" },
     map: { tokens:"Tokens", pop:"Pop", lvl:"Lvl", land:"Land", conns:"Conns", earthPercent:"\u{1F30D}%", quiz:"Quiz", collect:"Collect", pause:"Pause", mapNav:"Map" },
