@@ -60,7 +60,6 @@ jobs:
           TENCENTCLOUD_REGION: ap-hongkong
           DEPLOY_FUNCTION: ${{ github.event.inputs.function || 'all' }}
           APPID: '1376958570'
-          COS_BUCKET: "warxone-scf-deploy-1376958570"
         run: |
           python3 -c "
           import os, sys, json, zipfile, tempfile, shutil
@@ -71,13 +70,10 @@ jobs:
           from tencentcloud.common.profile.client_profile import ClientProfile
           from tencentcloud.common.profile.http_profile import HttpProfile
           from tencentcloud.scf.v20180416 import scf_client, models as scf_models
-          from tencentcloud.cos.v20190419 import cos_client, models as cos_models
 
           SECRET_ID = os.environ['TENCENTCLOUD_SECRET_ID']
           SECRET_KEY = os.environ['TENCENTCLOUD_SECRET_KEY']
           REGION = os.environ['TENCENTCLOUD_REGION']
-          APPID = os.environ['APPID']
-          COS_BUCKET = os.environ['COS_BUCKET']
           DEPLOY_FUNC = os.environ['DEPLOY_FUNCTION'].lower()
 
           ALL_FUNCTIONS = [
@@ -198,27 +194,29 @@ jobs:
               'game-save', 'game-load', 'game-delete',
           ]
 
-          print('## SCF Function URLs' >> '$GITHUB_STEP_SUMMARY')
-          print('' >> '$GITHUB_STEP_SUMMARY')
-          print('| Function | URL |' >> '$GITHUB_STEP_SUMMARY')
-          print('|----------|-----|' >> '$GITHUB_STEP_SUMMARY')
+          summary_path = os.environ.get('GITHUB_STEP_SUMMARY', '/dev/null')
 
-          for func in ALL_FUNCTIONS:
-              try:
-                  req = scf_models.ListTriggersRequest()
-                  req.FunctionName = f'warxone-{func}'
-                  resp = scf.ListTriggers(req)
+          with open(summary_path, 'a') as summary:
+              summary.write('## SCF Function URLs\n\n')
+              summary.write('| Function | URL |\n')
+              summary.write('|----------|-----|\n')
 
-                  for trigger in resp.Triggers:
-                      if trigger.Type == 'http':
-                          desc = json.loads(trigger.TriggerDesc)
-                          net = desc.get('NetConfig', {})
-                          url = net.get('ExtranetUrl') or net.get('Url') or net.get('IntranetUrl', 'N/A')
-                          print(f'  warxone-{func}: {url}')
-                          print(f'| warxone-{func} | {url} |' >> '$GITHUB_STEP_SUMMARY')
-                          break
-              except Exception as e:
-                  print(f'  warxone-{func}: ERROR - {e}')
+              for func in ALL_FUNCTIONS:
+                  try:
+                      req = scf_models.ListTriggersRequest()
+                      req.FunctionName = f'warxone-{func}'
+                      resp = scf.ListTriggers(req)
+
+                      for trigger in resp.Triggers:
+                          if trigger.Type == 'http':
+                              desc = json.loads(trigger.TriggerDesc)
+                              net = desc.get('NetConfig', {})
+                              url = net.get('ExtranetUrl') or net.get('Url') or net.get('IntranetUrl', 'N/A')
+                              print(f'  warxone-{func}: {url}')
+                              summary.write(f'| warxone-{func} | {url} |\n')
+                              break
+                  except Exception as e:
+                      print(f'  warxone-{func}: ERROR - {e}')
 
           print('\nAll function URLs verified.')
           "
