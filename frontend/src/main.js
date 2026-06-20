@@ -43,96 +43,86 @@ const api = {
     }
 };
 
-// ==================== WARXONE GAME CLASS ====================
-class WarXoneGame {
-    constructor() {
-        this.timers = [];
-        this.init();
-    }
-
-    init() {
-        this.setupEventDelegation();
-        this.setupLanguageSelectors();
-        this.checkAutoLogin();
-    }
+// ==================== WARXONE GAME ====================
+function createGame() {
+    const timers = [];
 
     // ---- Event Delegation ----
-    setupEventDelegation() {
+    function setupEventDelegation() {
         document.getElementById('game-container').addEventListener('click', (e) => {
             const btn = e.target.closest('[data-action]');
             if (!btn) return;
-            const action = btn.dataset.action;
-            this.handleAction(action, btn, e);
+            handleAction(btn.dataset.action, btn, e);
         });
     }
 
-    handleAction(action, btn, e) {
+    function handleAction(action, btn, e) {
         SFX.buttonClick();
         switch (action) {
-            case 'new-game': this.showScreen('signup-screen'); break;
-            case 'load-game': this.loadGame(); break;
-            case 'story': this.showStory(); break;
-            case 'settings': this.showScreen('settings-screen'); break;
-            case 'how-to-play': this.showTutorial(); break;
-            case 'back-to-menu': this.showScreen('main-menu'); break;
-            case 'signup': this.handleSignup(); break;
-            case 'start-game': this.handleStartGame(); break;
-            case 'switch-earth': this.switchWorld('earth'); break;
-            case 'switch-mars': this.switchWorld('mars'); break;
-            case 'zoom-in': this.zoomMap(1.2); break;
-            case 'zoom-out': this.zoomMap(0.8); break;
-            case 'zoom-reset': this.resetMapZoom(); break;
-            case 'nav-map': this.showScreen('map-screen'); break;
-            case 'nav-cards': this.showCardsScreen(); break;
-            case 'nav-shop': this.showShopScreen(); break;
-            case 'nav-alliance': this.showAllianceScreen(); break;
-            case 'nav-quiz': this.showQuizScreen(); break;
-            case 'nav-settings': this.showSettingsScreen(); break;
-            case 'auto-battle': this.autoBattle(); break;
-            case 'retreat': this.retreatBattle(); break;
-            case 'save-game': this.saveGame(); break;
-            case 'resume': this.togglePause(); break;
-            case 'quit-to-menu': this.quitToMenu(); break;
-            case 'close-tutorial': this.closeModal('tutorial-modal'); break;
-            case 'close-story': this.closeModal('story-modal'); break;
-            case 'mars-story-accept': this.acceptMars(); break;
-            case 'mars-story-skip': this.skipMars(); break;
-            case 'toggle-mobile-nav': this.toggleMobileNav(); break;
+            case 'new-game': showScreen('signup-screen'); break;
+            case 'load-game': loadGame(); break;
+            case 'story': showStory(); break;
+            case 'settings': showScreen('settings-screen'); break;
+            case 'how-to-play': showTutorial(); break;
+            case 'back-to-menu': showScreen('main-menu'); break;
+            case 'signup': handleSignup(); break;
+            case 'start-game': handleStartGame(); break;
+            case 'switch-earth': switchWorld('earth'); break;
+            case 'switch-mars': switchWorld('mars'); break;
+            case 'zoom-in': zoomMap(1.2); break;
+            case 'zoom-out': zoomMap(0.8); break;
+            case 'zoom-reset': resetMapZoom(); break;
+            case 'nav-map': showScreen('map-screen'); break;
+            case 'nav-cards': showCardsScreen(); break;
+            case 'nav-shop': showShopScreen(); break;
+            case 'nav-alliance': showAllianceScreen(); break;
+            case 'nav-quiz': showQuizScreen(); break;
+            case 'nav-settings': showSettingsScreen(); break;
+            case 'auto-battle': autoBattle(); break;
+            case 'retreat': retreatBattle(); break;
+            case 'save-game': saveGame(); break;
+            case 'resume': togglePause(); break;
+            case 'quit-to-menu': quitToMenu(); break;
+            case 'close-tutorial': closeModal('tutorial-modal'); break;
+            case 'close-story': closeModal('story-modal'); break;
+            case 'mars-story-accept': acceptMars(); break;
+            case 'mars-story-skip': skipMars(); break;
+            case 'toggle-mobile-nav': toggleMobileNav(); break;
             default: break;
         }
     }
 
     // ---- Screen Management ----
-    showScreen(id) {
+    function showScreen(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         const screen = document.getElementById(id);
         if (screen) screen.classList.add('active');
     }
 
     // ---- Auth ----
-    checkAutoLogin() {
+    function checkAutoLogin() {
         const saved = api.load();
         if (saved && saved.player && saved.player.signedUp) {
             // Auto-login is available
         }
     }
 
-    handleSignup() {
+    function handleSignup() {
         const email = document.getElementById('signup-email').value.trim();
         const pw = document.getElementById('signup-password').value;
         const confirm = document.getElementById('signup-confirm-password').value;
-        if (!email || !pw) { this.notify('Error', 'Please fill all fields'); SFX.error(); return; }
-        if (pw.length < 8) { this.notify('Error', 'Password must be at least 8 characters'); SFX.error(); return; }
-        if (pw !== confirm) { this.notify('Error', 'Passwords do not match'); SFX.error(); return; }
+        if (!email || !pw) { notify('Error', 'Please fill all fields'); SFX.error(); return; }
+        if (pw.length < 8) { notify('Error', 'Password must be at least 8 characters'); SFX.error(); return; }
+        if (pw !== confirm) { notify('Error', 'Passwords do not match'); SFX.error(); return; }
         GameState.player.email = email;
         GameState.player.signedUp = true;
         GameState.player.createdAt = Date.now();
-        this.showScreen('setup-screen');
-        this.populateStartingCountries();
+        showScreen('setup-screen');
+        populateStartingCountries();
     }
 
     // ---- Game Setup ----
-    populateStartingCountries() {
+    function populateStartingCountries() {
         const select = document.getElementById('starting-country');
         if (!select) return;
         select.innerHTML = '';
@@ -144,7 +134,7 @@ class WarXoneGame {
         }
     }
 
-    handleStartGame() {
+    function handleStartGame() {
         const name = document.getElementById('country-name').value.trim() || 'Ironhaven';
         const capital = document.getElementById('capital-name').value.trim() || 'Fortress';
         const flag = document.getElementById('flag-select').value;
@@ -162,16 +152,16 @@ class WarXoneGame {
         }
 
         // Assign chests to some countries
-        this.assignChests();
+        assignChests();
 
-        this.showScreen('map-screen');
-        this.drawMap();
-        this.updateUI();
-        this.startGameLoop();
-        this.saveGame();
+        showScreen('map-screen');
+        drawMap();
+        updateUI();
+        startGameLoop();
+        saveGame();
     }
 
-    assignChests() {
+    function assignChests() {
         const allCountries = Object.keys(GameState.countries);
         GameState.chests = {};
         // Place chests on ~8 random non-starting countries
@@ -184,7 +174,7 @@ class WarXoneGame {
     }
 
     // ---- Map ----
-    drawMap() {
+    function drawMap() {
         const svg = document.getElementById('map-svg');
         if (!svg) return;
 
@@ -205,13 +195,13 @@ class WarXoneGame {
 
             if (country.owner === 'player') {
                 path.classList.add(isMars ? 'mars-owned' : 'owned');
-            } else if (this.isAdjacent(id)) {
+            } else if (isAdjacent(id)) {
                 path.classList.add(isMars ? 'mars-adjacent' : 'adjacent');
             } else if (country.owner !== 'player') {
                 path.classList.add(isMars ? 'mars-enemy' : 'enemy');
             }
 
-            path.addEventListener('click', () => this.selectCountry(id));
+            path.addEventListener('click', () => selectCountry(id));
             svg.appendChild(path);
 
             // Country label
@@ -229,13 +219,13 @@ class WarXoneGame {
                 chest.classList.add('chest-icon');
                 chest.setAttribute('x', bbox.x + bbox.width / 2);
                 chest.setAttribute('y', bbox.y + 8);
-                chest.textContent = '🧰';
+                chest.textContent = '\u{1F6E0}';
                 svg.appendChild(chest);
             }
         }
     }
 
-    isAdjacent(countryId) {
+    function isAdjacent(countryId) {
         const owned = GameState.player.territories;
         const isMars = GameState.player.currentWorld === 'mars';
         const countries = isMars ? GameState.marsCountries : GameState.countries;
@@ -248,7 +238,7 @@ class WarXoneGame {
         });
     }
 
-    selectCountry(id) {
+    function selectCountry(id) {
         const isMars = GameState.player.currentWorld === 'mars';
         const countries = isMars ? GameState.marsCountries : GameState.countries;
         const country = countries[id];
@@ -256,19 +246,19 @@ class WarXoneGame {
 
         if (country.owner === 'player') {
             // Show country info
-            this.notify(country.name, `Pop: ${this.formatPop(country.pop)} | Military: ${country.military}`);
-        } else if (this.isAdjacent(id)) {
+            notify(country.name, `Pop: ${formatPop(country.pop)} | Military: ${country.military}`);
+        } else if (isAdjacent(id)) {
             // Attack
-            this.startBattle(id);
+            startBattle(id);
         } else {
-            this.notify(country.name, 'Not adjacent to your territories');
+            notify(country.name, 'Not adjacent to your territories');
         }
     }
 
     // ---- Battle ----
-    startBattle(countryId) {
+    function startBattle(countryId) {
         if (GameState.cooldowns.global > Date.now()) {
-            this.notify('Cooldown', 'Wait for the cooldown to finish');
+            notify('Cooldown', 'Wait for the cooldown to finish');
             return;
         }
 
@@ -283,7 +273,7 @@ class WarXoneGame {
         GameState.battle = {
             active: true,
             targetCountry: countryId,
-            attacker: { name: GameState.player.countryName, pop: attackerPop, military: this.getTotalMilitary() },
+            attacker: { name: GameState.player.countryName, pop: attackerPop, military: getTotalMilitary() },
             defender: { name: defender.name, pop: defenderPop, military: defender.military },
             turn: 0,
             interval: null
@@ -294,14 +284,14 @@ class WarXoneGame {
         overlay.classList.add('active');
         document.getElementById('attacker-name').textContent = GameState.battle.attacker.name;
         document.getElementById('defender-name').textContent = GameState.battle.defender.name;
-        document.getElementById('attacker-pop').textContent = this.formatPop(attackerPop);
-        document.getElementById('defender-pop').textContent = this.formatPop(defenderPop);
+        document.getElementById('attacker-pop').textContent = formatPop(attackerPop);
+        document.getElementById('defender-pop').textContent = formatPop(defenderPop);
         document.getElementById('battle-log').innerHTML = '';
 
         SFX.battleStart();
     }
 
-    autoBattle() {
+    function autoBattle() {
         if (!GameState.battle || !GameState.battle.active) return;
 
         const battle = GameState.battle;
@@ -309,13 +299,13 @@ class WarXoneGame {
         const defDmg = battle.attacker.military * 1000;
 
         if (attDmg > defDmg) {
-            this.resolveBattle(true);
+            resolveBattle(true);
         } else {
-            this.resolveBattle(false);
+            resolveBattle(false);
         }
     }
 
-    retreatBattle() {
+    function retreatBattle() {
         if (GameState.battle) {
             GameState.battle.active = false;
             if (GameState.battle.interval) clearInterval(GameState.battle.interval);
@@ -323,7 +313,7 @@ class WarXoneGame {
         document.getElementById('battlefield-overlay').classList.remove('active');
     }
 
-    resolveBattle(victory) {
+    function resolveBattle(victory) {
         const battle = GameState.battle;
         if (!battle) return;
 
@@ -345,9 +335,9 @@ class WarXoneGame {
             // Check for chest
             if (GameState.chests[countryId]) {
                 delete GameState.chests[countryId];
-                this.notify('Victory!', `Conquered ${countries[countryId].name}! Found a chest! +2 tokens`);
+                notify('Victory!', `Conquered ${countries[countryId].name}! Found a chest! +2 tokens`);
             } else {
-                this.notify('Victory!', `Conquered ${countries[countryId].name}! +2 tokens`);
+                notify('Victory!', `Conquered ${countries[countryId].name}! +2 tokens`);
             }
 
             // Check Mars unlock (90% of Earth)
@@ -357,25 +347,25 @@ class WarXoneGame {
                 if (owned / total >= 0.9) {
                     GameState.player.marsUnlocked = true;
                     SFX.marsDiscovered();
-                    this.showModal('mars-story-modal');
+                    showModal('mars-story-modal');
                 }
             }
 
             // Cooldown
             GameState.cooldowns.global = Date.now() + 30000;
-            this.showCooldown();
+            showCooldown();
         } else {
             SFX.defeat();
-            this.notify('Defeat', `Failed to conquer ${countries[battle.targetCountry]?.name}`);
+            notify('Defeat', `Failed to conquer ${countries[battle.targetCountry]?.name}`);
         }
 
         document.getElementById('battlefield-overlay').classList.remove('active');
-        this.drawMap();
-        this.updateUI();
-        this.saveGame();
+        drawMap();
+        updateUI();
+        saveGame();
     }
 
-    showCooldown() {
+    function showCooldown() {
         const el = document.getElementById('cooldown-timer-display');
         el.style.display = 'block';
         const update = () => {
@@ -391,14 +381,14 @@ class WarXoneGame {
     }
 
     // ---- World Switching ----
-    switchWorld(world) {
+    function switchWorld(world) {
         if (world === 'mars' && !GameState.player.marsUnlocked) {
-            this.notify('Locked', 'Conquer 90% of Earth to unlock Mars');
+            notify('Locked', 'Conquer 90% of Earth to unlock Mars');
             return;
         }
         GameState.player.currentWorld = world;
-        this.drawMap();
-        this.updateUI();
+        drawMap();
+        updateUI();
 
         // Update toggle buttons
         document.querySelectorAll('.world-toggle button').forEach(b => b.classList.remove('active'));
@@ -407,7 +397,7 @@ class WarXoneGame {
     }
 
     // ---- Map Zoom ----
-    zoomMap(factor) {
+    function zoomMap(factor) {
         const svg = document.getElementById('map-svg');
         if (!svg) return;
         const current = svg.style.transform || 'scale(1)';
@@ -417,38 +407,38 @@ class WarXoneGame {
         svg.style.transformOrigin = 'center';
     }
 
-    resetMapZoom() {
+    function resetMapZoom() {
         const svg = document.getElementById('map-svg');
         if (svg) svg.style.transform = 'scale(1)';
     }
 
     // ---- UI Updates ----
-    updateUI() {
+    function updateUI() {
         const el = (id) => document.getElementById(id);
         if (el('player-flag')) el('player-flag').textContent = GameState.player.flag;
         if (el('token-count')) el('token-count').textContent = GameState.player.tokens;
-        if (el('population-count')) el('population-count').textContent = this.formatPop(GameState.player.population);
+        if (el('population-count')) el('population-count').textContent = formatPop(GameState.player.population);
         if (el('level-display')) el('level-display').textContent = GameState.player.level;
         if (el('card-count')) el('card-count').textContent = GameState.player.cards.length;
     }
 
     // ---- Game Loop ----
-    startGameLoop() {
+    function startGameLoop() {
         // Population growth every 10 seconds
         const popTimer = setInterval(() => {
             const owned = GameState.player.territories.length;
             GameState.player.population += owned * 100;
-            this.updateUI();
+            updateUI();
         }, 10000);
-        this.timers.push(popTimer);
+        timers.push(popTimer);
 
         // Auto-save every 30 seconds
-        const saveTimer = setInterval(() => this.saveGame(), 30000);
-        this.timers.push(saveTimer);
+        const saveTimer = setInterval(() => saveGame(), 30000);
+        timers.push(saveTimer);
     }
 
     // ---- Save/Load ----
-    saveGame() {
+    function saveGame() {
         const saveData = {
             player: GameState.player,
             connections: GameState.connections,
@@ -463,10 +453,10 @@ class WarXoneGame {
         api.save(saveData);
     }
 
-    loadGame() {
+    function loadGame() {
         const saved = api.load();
         if (!saved || !saved.player || !saved.player.signedUp) {
-            this.notify('No Save', 'No saved game found');
+            notify('No Save', 'No saved game found');
             return;
         }
         Object.assign(GameState.player, saved.player);
@@ -477,89 +467,89 @@ class WarXoneGame {
         if (saved.marsStoryShown) GameState.marsStoryShown = saved.marsStoryShown;
         if (saved.quizScore) GameState.quizScore = saved.quizScore;
 
-        this.showScreen('map-screen');
-        this.drawMap();
-        this.updateUI();
-        this.startGameLoop();
-        if (GameState.cooldowns.global > Date.now()) this.showCooldown();
-        this.notify('Loaded', 'Game loaded successfully');
+        showScreen('map-screen');
+        drawMap();
+        updateUI();
+        startGameLoop();
+        if (GameState.cooldowns.global > Date.now()) showCooldown();
+        notify('Loaded', 'Game loaded successfully');
     }
 
     // ---- Modals ----
-    showModal(id) {
+    function showModal(id) {
         const el = document.getElementById(id);
         if (el) el.classList.add('active');
     }
 
-    closeModal(id) {
+    function closeModal(id) {
         const el = document.getElementById(id);
         if (el) el.classList.remove('active');
     }
 
-    showTutorial() {
+    function showTutorial() {
         document.getElementById('tutorial-text').textContent = t('tutorial.text');
-        this.showModal('tutorial-modal');
+        showModal('tutorial-modal');
     }
 
-    showStory() {
+    function showStory() {
         document.getElementById('story-text').innerHTML = `
             <h2>The Story</h2>
             <p>In the year 2150, Earth's resources have been depleted. Nations fight for the remaining territories.
             You are the leader of a new nation, destined to conquer the world — and beyond.</p>
             <p style="margin-top:10px;color:var(--neon-green);">Conquer territories, build connections, form alliances, and unlock Mars!</p>
         `;
-        this.showModal('story-modal');
+        showModal('story-modal');
     }
 
     // ---- Pause ----
-    togglePause() {
+    function togglePause() {
         const menu = document.getElementById('pause-menu');
         menu.classList.toggle('active');
     }
 
-    quitToMenu() {
-        this.saveGame();
-        this.timers.forEach(t => clearInterval(t));
-        this.timers = [];
-        this.showScreen('main-menu');
+    function quitToMenu() {
+        saveGame();
+        timers.forEach(t => clearInterval(t));
+        timers.length = 0;
+        showScreen('main-menu');
         document.getElementById('pause-menu').classList.remove('active');
     }
 
     // ---- Mars ----
-    acceptMars() {
-        this.closeModal('mars-story-modal');
-        this.switchWorld('mars');
+    function acceptMars() {
+        closeModal('mars-story-modal');
+        switchWorld('mars');
     }
 
-    skipMars() {
+    function skipMars() {
         GameState.marsStoryShown = true;
-        this.closeModal('mars-story-modal');
+        closeModal('mars-story-modal');
     }
 
     // ---- Cards/Shop/Alliance/Quiz/Settings Stubs ----
-    showCardsScreen() { this.notify('Cards', `${GameState.player.cards.length} cards in your inventory`); }
-    showShopScreen() {
+    function showCardsScreen() { notify('Cards', `${GameState.player.cards.length} cards in your inventory`); }
+    function showShopScreen() {
         if (GameState.player.tokens >= 5) {
             GameState.player.tokens -= 5;
-            const card = this.generateCard();
+            const card = generateCard();
             GameState.player.cards.push(card);
             SFX.cardOpen();
-            this.notify('Card Pack', `Got a ${card.rarity} card!`);
-            this.updateUI();
-            this.saveGame();
+            notify('Card Pack', `Got a ${card.rarity} card!`);
+            updateUI();
+            saveGame();
         } else {
-            this.notify('Not Enough Tokens', 'You need 5 tokens to buy a pack');
+            notify('Not Enough Tokens', 'You need 5 tokens to buy a pack');
             SFX.error();
         }
     }
-    showAllianceScreen() { this.notify('Alliance', 'Alliance system coming in Phase 6'); }
-    showQuizScreen() { this.notify('Quiz', 'Quiz system coming in Phase 5'); }
-    showSettingsScreen() {
+    function showAllianceScreen() { notify('Alliance', 'Alliance system coming in Phase 6'); }
+    function showQuizScreen() { notify('Quiz', 'Quiz system coming in Phase 5'); }
+    function showSettingsScreen() {
         const data = JSON.stringify(GameState, null, 2);
-        this.notify('Settings', `Game data exported. Save: ${api.save({player: GameState.player, connections: GameState.connections, chests: GameState.chests, usedGiftCodes: GameState.usedGiftCodes, cooldowns: GameState.cooldowns}) ? 'OK' : 'Failed'}`);
+        notify('Settings', `Game data exported. Save: ${api.save({player: GameState.player, connections: GameState.connections, chests: GameState.chests, usedGiftCodes: GameState.usedGiftCodes, cooldowns: GameState.cooldowns}) ? 'OK' : 'Failed'}`);
     }
 
-    generateCard() {
+    function generateCard() {
         const roll = Math.random();
         let rarity = 'common';
         if (roll > 0.95) rarity = 'legendary';
@@ -581,21 +571,21 @@ class WarXoneGame {
     }
 
     // ---- Mobile Nav ----
-    toggleMobileNav() {
-        this.togglePause();
+    function toggleMobileNav() {
+        togglePause();
     }
 
     // ---- Language ----
-    setupLanguageSelectors() {
+    function setupLanguageSelectors() {
         document.querySelectorAll('#language-select, #language-select-map').forEach(sel => {
             sel.addEventListener('change', (e) => {
                 setLanguage(e.target.value);
-                this.applyTranslations();
+                applyTranslations();
             });
         });
     }
 
-    applyTranslations() {
+    function applyTranslations() {
         // Update static UI elements with translations
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.dataset.i18n;
@@ -604,7 +594,7 @@ class WarXoneGame {
     }
 
     // ---- Notifications ----
-    notify(title, msg) {
+    function notify(title, msg) {
         const notif = document.getElementById('notification');
         if (!notif) return;
         notif.querySelector('.notification-title').textContent = title;
@@ -615,13 +605,13 @@ class WarXoneGame {
     }
 
     // ---- Helpers ----
-    formatPop(pop) {
+    function formatPop(pop) {
         if (pop >= 1000000) return (pop / 1000000).toFixed(1) + 'M';
         if (pop >= 1000) return (pop / 1000).toFixed(0) + 'k';
         return pop.toString();
     }
 
-    getTotalMilitary() {
+    function getTotalMilitary() {
         return GameState.player.territories.reduce((sum, id) => {
             const isMars = GameState.player.currentWorld === 'mars';
             const countries = isMars ? GameState.marsCountries : GameState.countries;
@@ -629,14 +619,21 @@ class WarXoneGame {
         }, 0);
     }
 
-    destroy() {
-        this.timers.forEach(t => clearInterval(t));
-        this.timers = [];
+    function destroy() {
+        timers.forEach(t => clearInterval(t));
+        timers.length = 0;
     }
+
+    // ---- Initialize ----
+    setupEventDelegation();
+    setupLanguageSelectors();
+    checkAutoLogin();
+
+    return { destroy };
 }
 
 // ==================== BOOTSTRAP ====================
-const game = new WarXOneGame();
+createGame();
 
 // Make GameState accessible for debugging
-window.__warxone = { game, GameState };
+window.__warxone = { GameState };
