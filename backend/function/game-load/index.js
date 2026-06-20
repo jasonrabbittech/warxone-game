@@ -11,6 +11,22 @@ const { getUserIdFromHeaders } = require('./shared/jwt');
 const { ok, unauthorized, notFound, serverError, handlePreflight } = require('./shared/response');
 
 async function ensureSchema() {
+  // Ensure users table exists (FK dependency)
+  await query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id VARCHAR(36) PRIMARY KEY,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      password_hash VARCHAR(512) NOT NULL,
+      display_name VARCHAR(50) DEFAULT '',
+      auth_provider VARCHAR(20) DEFAULT 'email',
+      provider_id VARCHAR(255) DEFAULT '',
+      refresh_token_version INT DEFAULT 1,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_email (email),
+      INDEX idx_provider (auth_provider, provider_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
   await query(`
     CREATE TABLE IF NOT EXISTS game_saves (
       id VARCHAR(36) PRIMARY KEY,
