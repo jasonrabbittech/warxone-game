@@ -1,0 +1,86 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths: ['game/**']
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: false
+        default: 'patch'
+        type: choice
+        options: [patch, minor, major]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Get latest tag
+        id: tag
+        run: |
+          LATEST=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest=$LATEST" >> "$GITHUB_OUTPUT"
+
+      - name: Calculate next version
+        id: version
+        run: |
+          LATEST=${{ steps.tag.outputs.latest }}
+          BUMP=${{ inputs.version_bump || 'patch' }}
+          # Strip leading 'v'
+          VERSION=${LATEST#v}
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          case "$BUMP" in
+            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH + 1)) ;;
+          esac
+          NEXT="v${MAJOR}.${MINOR}.${PATCH}"
+          echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "Next version: $NEXT"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          LATEST=${{ steps.tag.outputs.latest }}
+          if [ "$LATEST" = "v0.0.0" ]; then
+            LOG=$(git log --pretty=format:"- %s (%h)" --reverse)
+          else
+            LOG=$(git log "${LATEST}..HEAD" --pretty=format:"- %s (%h)" --reverse)
+          fi
+          # Write to file for multiline output
+          echo "$LOG" > /tmp/changelog.txt
+          echo "Generated changelog with $(echo "$LOG" | wc -l) entries"
+
+      - name: Create tag
+        run: |
+          git tag -a "${{ steps.version.outputs.next }}" -m "Release ${{ steps.version.outputs.next }}"
+          git push origin "${{ steps.version.outputs.next }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.next }}
+          name: "WarXone ${{ steps.version.outputs.next }}"
+          body_path: /tmp/changelog.txt
+          draft: false
+          prerelease: false
+
+      - name: Summary
+        run: |
+          echo "## Release Created 🚀" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Version**: \`${{ steps.version.outputs.next }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Previous**: \`${{ steps.tag.outputs.latest }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Changelog" >> "$GITHUB_STEP_SUMMARY"
+          cat /tmp/changelog.txt >> "$GITHUB_STEP_SUMMARY"
