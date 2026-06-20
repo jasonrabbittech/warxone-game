@@ -586,10 +586,99 @@ function createGame() {
     }
 
     function applyTranslations() {
-        // Update static UI elements with translations
-        document.querySelectorAll('[data-i18n]').forEach(el => {
-            const key = el.dataset.i18n;
-            el.textContent = t(key);
+        // Main menu
+        const logo = document.querySelector('.logo');
+        if (logo) logo.textContent = t('mainMenu.title');
+        const tagline = document.querySelector('.tagline');
+        if (tagline) tagline.textContent = t('mainMenu.tagline');
+        document.querySelectorAll('#main-menu [data-action]').forEach(btn => {
+            const map = { 'new-game': 'newGame', 'load-game': 'loadGame', 'story': 'story', 'settings': 'settings', 'how-to-play': 'howToPlay' };
+            const key = map[btn.dataset.action];
+            if (key) btn.textContent = t('mainMenu.' + key);
+        });
+
+        // Signup
+        const signupH1 = document.querySelector('#signup-screen h1');
+        if (signupH1) signupH1.textContent = t('signup.title');
+        const signupEmailLabel = document.querySelector('label[for="signup-email"]');
+        if (signupEmailLabel) signupEmailLabel.textContent = t('signup.email');
+        const signupPwLabel = document.querySelector('label[for="signup-password"]');
+        if (signupPwLabel) signupPwLabel.textContent = t('signup.password');
+        const signupConfirmLabel = document.querySelector('label[for="signup-confirm-password"]');
+        if (signupConfirmLabel) signupConfirmLabel.textContent = t('signup.confirm');
+        const signupBtn = document.querySelector('[data-action="signup"]');
+        if (signupBtn) signupBtn.textContent = t('signup.btn');
+        const signupBack = document.querySelector('#signup-screen [data-action="back-to-menu"]');
+        if (signupBack) signupBack.textContent = t('signup.back');
+
+        // Setup
+        const setupH1 = document.querySelector('#setup-screen h1');
+        if (setupH1) setupH1.textContent = t('setup.title');
+        const cnLabel = document.querySelector('label[for="country-name"]');
+        if (cnLabel) cnLabel.textContent = t('setup.countryName');
+        const capLabel = document.querySelector('label[for="capital-name"]');
+        if (capLabel) capLabel.textContent = t('setup.capitalName');
+        const flagLabel = document.querySelector('label[for="flag-select"]');
+        if (flagLabel) flagLabel.textContent = t('setup.flag');
+        const scLabel = document.querySelector('label[for="starting-country"]');
+        if (scLabel) scLabel.textContent = t('setup.startingCountry');
+        const startBtn = document.querySelector('[data-action="start-game"]');
+        if (startBtn) startBtn.textContent = t('setup.startBtn');
+        const setupBack = document.querySelector('#setup-screen [data-action="back-to-menu"]');
+        if (setupBack) setupBack.textContent = t('setup.backBtn');
+
+        // Map dashboard labels
+        const infoLabels = document.querySelectorAll('.info-label');
+        if (infoLabels.length >= 4) {
+            infoLabels[0].textContent = t('map.tokens');
+            infoLabels[1].textContent = t('map.pop');
+            infoLabels[2].textContent = t('map.lvl');
+            infoLabels[3].textContent = t('map.land');
+        }
+
+        // Tutorial
+        const tutorialH2 = document.querySelector('#tutorial-modal h2');
+        if (tutorialH2) tutorialH2.textContent = t('tutorial.title');
+        const tutorialText = document.getElementById('tutorial-text');
+        if (tutorialText) tutorialText.innerText = t('tutorial.text');
+
+        // Battlefield
+        const bfTitle = document.querySelector('.battlefield-title');
+        if (bfTitle) bfTitle.textContent = t('battle.title');
+        const atkName = document.getElementById('attacker-name');
+        if (atkName) atkName.textContent = t('battle.attacker');
+        const defName = document.getElementById('defender-name');
+        if (defName) defName.textContent = t('battle.defender');
+        const autoBtn = document.querySelector('[data-action="auto-battle"]');
+        if (autoBtn) autoBtn.textContent = t('battle.auto');
+        const retreatBtn = document.querySelector('[data-action="retreat"]');
+        if (retreatBtn) retreatBtn.textContent = t('battle.retreat');
+
+        // Pause menu
+        const pauseH2 = document.querySelector('#pause-menu h2');
+        if (pauseH2) pauseH2.textContent = t('settings.pause') || 'Paused';
+        const resumeBtn = document.querySelector('[data-action="resume"]');
+        if (resumeBtn) resumeBtn.textContent = t('settings.resume') || 'Resume';
+        const saveBtn = document.querySelector('[data-action="save-game"]');
+        if (saveBtn) saveBtn.textContent = t('settings.save') || 'Save Game';
+        const quitBtn = document.querySelector('[data-action="quit-to-menu"]');
+        if (quitBtn) quitBtn.textContent = t('settings.quit') || 'Quit to Menu';
+
+        // Bottom nav
+        const navActions = ['nav-map','nav-cards','nav-shop','nav-alliance','nav-quiz','nav-settings'];
+        const navLabels = ['map.mapNav','card.title','card.shopNav','alliance.title','quiz.title','settings.title'];
+        navActions.forEach((action, i) => {
+            const btn = document.querySelector(`[data-action="${action}"]`);
+            if (btn && navLabels[i]) {
+                const spans = btn.querySelectorAll('span');
+                if (spans.length >= 2) spans[1].textContent = t(navLabels[i]);
+            }
+        });
+
+        // Sync language selectors
+        const lang = getCurrentLanguage();
+        document.querySelectorAll('#language-select, #language-select-map').forEach(sel => {
+            sel.value = lang;
         });
     }
 
