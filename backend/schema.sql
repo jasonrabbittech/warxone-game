@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Game saves: one save slot per user
+-- NOTE: No FOREIGN KEY constraint because TDSQL-C Serverless user may lack REFERENCES privilege.
+-- Referential integrity is enforced at the application level (auth check before save/load/delete).
 CREATE TABLE IF NOT EXISTS game_saves (
   id VARCHAR(36) PRIMARY KEY,
   user_id VARCHAR(36) NOT NULL,
@@ -34,6 +36,5 @@ CREATE TABLE IF NOT EXISTS game_saves (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE INDEX idx_user_id (user_id),
-  INDEX idx_level (level),
-  CONSTRAINT fk_game_saves_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  INDEX idx_level (level)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
