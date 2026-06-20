@@ -1,0 +1,186 @@
+#map-screen {
+    background: var(--darker-bg);
+    padding: 0;
+}
+
+.map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background: rgba(10,10,30,0.95);
+    border-bottom: var(--border-neon);
+    z-index: 10;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.player-info {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 45px;
+}
+
+.info-label { font-size: 0.65rem; color: var(--text-secondary); }
+.info-value { font-size: 0.95rem; color: var(--neon-green); font-weight: bold; }
+.flag-display { font-size: 1.8rem; margin-right: 4px; }
+
+.map-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: radial-gradient(circle at 20% 30%, rgba(0,20,40,0.8), var(--darker-bg));
+}
+
+#map-svg {
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+    touch-action: pan-x pan-y pinch-zoom;
+}
+
+.country-path {
+    stroke: rgba(255,255,255,0.35);
+    stroke-width: 1.5;
+    fill: rgba(20,20,50,0.8);
+    cursor: pointer;
+    transition: fill 0.3s;
+}
+
+.country-path.owned {
+    fill: rgba(0,255,157,0.35);
+    stroke: var(--neon-green);
+    stroke-width: 2.5;
+}
+
+.country-path.adjacent {
+    fill: rgba(240,255,0,0.35);
+    stroke: var(--neon-yellow);
+    stroke-width: 2.5;
+}
+
+.country-path.enemy {
+    fill: rgba(255,0,255,0.2);
+    stroke: var(--neon-pink);
+}
+
+.country-path.mars-owned {
+    fill: rgba(255,102,0,0.35);
+    stroke: var(--neon-orange);
+    stroke-width: 2.5;
+}
+
+.country-path.mars-adjacent {
+    fill: rgba(255,102,0,0.25);
+    stroke: var(--neon-orange);
+    stroke-width: 2.5;
+}
+
+.country-path.mars-enemy {
+    fill: rgba(255,34,0,0.2);
+    stroke: var(--neon-red);
+}
+
+.country-label {
+    font-size: 6px;
+    fill: #fff;
+    text-anchor: middle;
+    pointer-events: none;
+    text-shadow: 1px 1px 2px black;
+}
+
+.chest-icon { font-size: 13px; pointer-events: none; }
+
+.map-controls {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 5;
+}
+
+.map-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: rgba(10,10,30,0.9);
+    border: var(--border-neon);
+    color: var(--neon-blue);
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    padding: 6px;
+    background: rgba(10,10,30,0.95);
+    border-top: var(--border-neon);
+    z-index: 10;
+}
+
+.nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 8px;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.75rem;
+    min-height: 40px;
+}
+
+.nav-btn.active { color: var(--neon-blue); }
+
+.world-toggle {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 15;
+    display: flex;
+    gap: 5px;
+}
+
+.world-toggle button {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    border-radius: 20px;
+}
+
+.world-toggle button.active {
+    background: var(--neon-orange);
+    color: #fff;
+}
+
+.mobile-nav-toggle {
+    display: none;
+    position: fixed;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 300;
+    background: var(--panel-bg);
+    border: var(--border-neon);
+    border-radius: 30px;
+    padding: 8px 18px;
+    color: var(--neon-blue);
+    cursor: pointer;
+    font-size: 0.9rem;
+}

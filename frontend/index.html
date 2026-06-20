@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>WarXOne - Earth & Mars Conquest</title>
+    <link rel="manifest" href="./manifest.json">
+</head>
+<body>
+<div id="game-container">
+    <div id="notification" class="notification"><div class="notification-title"></div><div class="notification-message"></div></div>
+    <div id="cooldown-timer-display">Cooldown: <span id="cooldown-timer-value">30</span>s</div>
+
+    <!-- Tutorial Modal -->
+    <div id="tutorial-modal">
+        <div class="tutorial-content">
+            <h2>How to Play</h2>
+            <div id="tutorial-text"></div>
+            <button class="btn" data-action="close-tutorial" style="margin-top:15px;width:100%;">Got it!</button>
+        </div>
+    </div>
+
+    <!-- Story Modal -->
+    <div id="story-modal">
+        <div class="story-content">
+            <div id="story-text"></div>
+            <button class="btn" data-action="close-story" style="margin-top:15px;width:100%;">Continue</button>
+        </div>
+    </div>
+
+    <!-- Mars Story Modal -->
+    <div id="mars-story-modal">
+        <div class="mars-story-content">
+            <h2>Mars Awaits</h2>
+            <p>The red planet holds ancient secrets and untold riches. Your advanced civilization has unlocked interplanetary travel. Will you claim Mars?</p>
+            <p style="margin:10px 0;color:var(--neon-orange);">Mars territories are tougher — higher military and population. Prepare your forces!</p>
+            <button class="btn btn-orange" data-action="mars-story-accept">Accept the Challenge</button>
+            <button class="btn" data-action="mars-story-skip" style="margin-top:8px;">Skip (Go to Mars Later)</button>
+        </div>
+    </div>
+
+    <!-- Main Menu -->
+    <div id="main-menu" class="screen active">
+        <div class="language-selector"><select id="language-select"><option value="en">English</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="it">Italiano</option><option value="pt">Português</option><option value="ru">Русский</option><option value="ja">日本語</option><option value="ko">한국어</option><option value="zh">中文</option></select></div>
+        <div class="logo">WARXONE</div><div class="tagline">Conquer Earth & Mars</div>
+        <div class="menu-buttons">
+            <button class="btn" data-action="new-game">New Game</button>
+            <button class="btn" data-action="load-game">Load Game</button>
+            <button class="btn btn-pink" data-action="story">The Story</button>
+            <button class="btn" data-action="settings">Settings</button>
+            <button class="btn btn-green" data-action="how-to-play">How to Play</button>
+        </div>
+    </div>
+
+    <!-- Signup -->
+    <div id="signup-screen" class="screen"><div class="setup-form"><h1 style="text-align:center;color:var(--neon-blue);">Sign Up</h1><div class="form-group"><label>Email</label><input type="email" id="signup-email" placeholder="your@email.com"></div><div class="form-group"><label>Password (min 8)</label><input type="password" id="signup-password" placeholder="min 8 characters" minlength="8"></div><div class="form-group"><label>Confirm Password</label><input type="password" id="signup-confirm-password" placeholder="confirm password"></div><button class="btn" data-action="signup" style="width:100%;margin-top:15px;">Sign Up</button><button class="btn btn-pink" data-action="back-to-menu" style="width:100%;margin-top:10px;">Back to Menu</button></div></div>
+
+    <!-- Setup -->
+    <div id="setup-screen" class="screen"><div class="setup-form"><h1 style="text-align:center;color:var(--neon-blue);">Setup Your Country</h1><div class="form-group"><label>Country Name</label><input type="text" id="country-name" placeholder="My Nation" maxlength="20"></div><div class="form-group"><label>Capital Name</label><input type="text" id="capital-name" placeholder="Capital City" maxlength="20"></div><div class="form-group"><label>Flag</label><select id="flag-select"><option value="🇫🇷">🇫🇷 France</option><option value="🇩🇪">🇩🇪 Germany</option><option value="🇬🇧">🇬🇧 UK</option><option value="🇪🇸">🇪🇸 Spain</option><option value="🇮🇹">🇮🇹 Italy</option><option value="🇷🇺">🇷🇺 Russia</option><option value="🇺🇸">🇺🇸 USA</option><option value="🇨🇳">🇨🇳 China</option></select></div><div class="form-group"><label>Starting Country</label><select id="starting-country"></select></div><button class="btn" data-action="start-game" style="width:100%;">Start Game</button><button class="btn btn-pink" data-action="back-to-menu" style="width:100%;margin-top:10px;">Back to Menu</button></div></div>
+
+    <!-- Map Screen -->
+    <div id="map-screen" class="screen">
+        <div class="map-header">
+            <div class="player-info">
+                <span class="flag-display" id="player-flag">🇫🇷</span>
+                <div class="info-item"><div class="info-label">Tokens</div><div class="info-value" id="token-count">10</div></div>
+                <div class="info-item"><div class="info-label">Pop</div><div class="info-value" id="population-count">20k</div></div>
+                <div class="info-item"><div class="info-label">Lvl</div><div class="info-value" id="level-display">1</div></div>
+                <div class="info-item"><div class="info-label">Cards</div><div class="info-value" id="card-count">0</div></div>
+            </div>
+            <div class="language-selector"><select id="language-select-map"><option value="en">English</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="it">Italiano</option><option value="pt">Português</option><option value="ru">Русский</option><option value="ja">日本語</option><option value="ko">한국어</option><option value="zh">中文</option></select></div>
+        </div>
+        <div class="world-toggle"><button class="btn btn-small" data-action="switch-earth">Earth</button><button class="btn btn-small btn-orange" data-action="switch-mars">Mars</button></div>
+        <div class="map-container"><svg id="map-svg" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet"></svg></div>
+        <div class="map-controls"><button class="map-btn" data-action="zoom-in">+</button><button class="map-btn" data-action="zoom-out">−</button><button class="map-btn" data-action="zoom-reset">⟲</button></div>
+        <div class="bottom-nav">
+            <button class="nav-btn" data-action="nav-map"><span>🗺️</span><span>Map</span></button>
+            <button class="nav-btn" data-action="nav-cards"><span>🃏</span><span>Cards</span></button>
+            <button class="nav-btn" data-action="nav-shop"><span>🏪</span><span>Shop</span></button>
+            <button class="nav-btn" data-action="nav-alliance"><span>🤝</span><span>Alliance</span></button>
+            <button class="nav-btn" data-action="nav-quiz"><span>🧠</span><span>Quiz</span></button>
+            <button class="nav-btn" data-action="nav-settings"><span>⚙️</span><span>Settings</span></button>
+        </div>
+    </div>
+
+    <!-- Battlefield Overlay -->
+    <div id="battlefield-overlay">
+        <div class="battlefield-container">
+            <div class="battlefield-title">Battle!</div>
+            <div class="battlefield-frontline">
+                <div class="battlefield-side" id="attacker-side"><h3 id="attacker-name">Attacker</h3><div class="pop" id="attacker-pop" style="color:var(--neon-green);">0</div></div>
+                <div class="battlefield-frontline-line"></div>
+                <div class="battlefield-side" id="defender-side"><h3 id="defender-name">Defender</h3><div class="pop" id="defender-pop" style="color:var(--neon-pink);">0</div></div>
+            </div>
+            <div class="battlefield-log" id="battle-log"></div>
+            <div class="battlefield-controls">
+                <button class="btn btn-pink" data-action="auto-battle">Auto Battle</button>
+                <button class="btn btn-green" data-action="retreat">Retreat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pause Menu -->
+    <div class="pause-menu" id="pause-menu">
+        <div class="pause-container">
+            <h2 style="color:var(--neon-blue);margin-bottom:15px;">Paused</h2>
+            <button class="btn" data-action="resume" style="width:100%;margin-bottom:8px;">Resume</button>
+            <button class="btn btn-green" data-action="save-game" style="width:100%;margin-bottom:8px;">Save Game</button>
+            <button class="btn btn-pink" data-action="quit-to-menu" style="width:100%;">Quit to Menu</button>
+        </div>
+    </div>
+
+    <button class="mobile-nav-toggle" data-action="toggle-mobile-nav">Menu</button>
+</div>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

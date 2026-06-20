@@ -1,0 +1,25 @@
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+    --neon-blue: #0ff0fc;
+    --neon-pink: #ff00ff;
+    --neon-green: #00ff9d;
+    --neon-yellow: #f0ff00;
+    --neon-orange: #ff6600;
+    --neon-red: #ff2200;
+    --dark-bg: #0a0a14;
+    --darker-bg: #050510;
+    --panel-bg: rgba(10,10,30,0.9);
+    --text-primary: #ffffff;
+    --text-secondary: #b0b0d0;
+    --border-neon: 1px solid var(--neon-blue);
+    --glow-blue: 0 0 10px var(--neon-blue), 0 0 20px rgba(0,240,252,0.3);
+    --glow-pink: 0 0 10px var(--neon-pink), 0 0 20px rgba(255,0,255,0.3);
+    --glow-green: 0 0 10px var(--neon-green), 0 0 20px rgba(0,255,157,0.3);
+    --glow-orange: 0 0 10px var(--neon-orange), 0 0 20px rgba(255,102,0,0.4);
+}

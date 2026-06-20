@@ -19,5 +19,12 @@ Thumbs.db
 # Node (for future use)
 node_modules/
 
+# Vite build output
+frontend/dist/
+
+# Environment
+.env
+.env.local
+
 # Generated images (keep resized icons only)
 game/icons/A_*.png
