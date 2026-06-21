@@ -293,9 +293,17 @@ function createGame() {
 
         const isMars = GameState.player.currentWorld === 'mars';
         const countries = isMars ? GameState.marsCountries : GameState.countries;
-        const paths = isMars ? GameState.marsPaths : GameState.countryPaths;
+        const paths = isMars ? GameState.marsCountryPaths : GameState.countryPaths;
 
         svg.innerHTML = '';
+
+        // Set viewBox to fit all territory coordinates for the current world
+        // Earth coords: ~150-2050 x 180-1300 | Mars coords: ~380-2400 x 1000-1600
+        if (isMars) {
+            svg.setAttribute('viewBox', '0 0 2500 1700');
+        } else {
+            svg.setAttribute('viewBox', '0 0 2150 1400');
+        }
 
         for (const [id, country] of Object.entries(countries)) {
             const pathData = paths[id];
