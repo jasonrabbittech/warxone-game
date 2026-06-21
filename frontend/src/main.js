@@ -287,6 +287,26 @@ function createGame() {
     }
 
     // ---- Map ----
+    // ViewBox-based map navigation: stores current viewport as {x, y, w, h}
+    const MAP_VIEW = {
+        earth: { x: 0, y: 0, w: 2150, h: 1400 },
+        mars:  { x: 0, y: 0, w: 2500, h: 1700 }
+    };
+    let mapPan = { active: false, startX: 0, startY: 0, viewX: 0, viewY: 0 };
+
+    function getMapView() {
+        return GameState.player.currentWorld === 'mars' ? MAP_VIEW.mars : MAP_VIEW.earth;
+    }
+
+    function applyViewBox() {
+        const svg = document.getElementById('map-svg');
+        if (!svg) return;
+        const v = getMapView();
+        svg.setAttribute('viewBox', `${v.x} ${v.y} ${v.w} ${v.h}`);
+        // Reset CSS transform so it doesn't conflict with viewBox
+        svg.style.transform = '';
+    }
+
     function drawMap() {
         const svg = document.getElementById('map-svg');
         if (!svg) return;
@@ -297,13 +317,7 @@ function createGame() {
 
         svg.innerHTML = '';
 
-        // Set viewBox to fit all territory coordinates for the current world
-        // Earth coords: ~150-2050 x 180-1300 | Mars coords: ~380-2400 x 1000-1600
-        if (isMars) {
-            svg.setAttribute('viewBox', '0 0 2500 1700');
-        } else {
-            svg.setAttribute('viewBox', '0 0 2150 1400');
-        }
+        applyViewBox();
 
         for (const [id, country] of Object.entries(countries)) {
             const pathData = paths[id];
@@ -517,20 +531,165 @@ function createGame() {
         if (btn) btn.classList.add('active');
     }
 
-    // ---- Map Zoom ----
+    // ---- Map Zoom (viewBox-based) ----
     function zoomMap(factor) {
+        const v = getMapView();
         const svg = document.getElementById('map-svg');
-        if (!svg) return;
-        const current = svg.style.transform || 'scale(1)';
-        const match = current.match(/scale\(([\d.]+)\)/);
-        const scale = match ? Math.min(Math.max(parseFloat(match[1]) * factor, 0.5), 5) : factor;
-        svg.style.transform = `scale(${scale})`;
-        svg.style.transformOrigin = 'center';
+        if (!svg || !svg.clientWidth) return;
+
+        // Zoom by scaling w/h around the center of current view
+        const newW = v.w / factor;
+        const newH = v.h / factor;
+        if (newW < 200 || newH < 200) return; // max zoom limit
+        if (newW > 5000 || newH > 4000) return; // min zoom limit
+
+        v.x += (v.w - newW) / 2;
+        v.y += (v.h - newH) / 2;
+        v.w = newW;
+        v.h = newH;
+
+        clampViewBox();
+        applyViewBox();
     }
 
     function resetMapZoom() {
+        const v = getMapView();
+        const base = GameState.player.currentWorld === 'mars'
+            ? { x: 0, y: 0, w: 2500, h: 1700 }
+            : { x: 0, y: 0, w: 2150, h: 1400 };
+        Object.assign(v, base);
+        applyViewBox();
+    }
+
+    function clampViewBox() {
+        const v = getMapView();
+        const full = GameState.player.currentWorld === 'mars'
+            ? { w: 2500, h: 1700 }
+            : { w: 2150, h: 1400 };
+        // Don't let viewport go outside map bounds
+        v.x = Math.max(0, Math.min(v.x, full.w - v.w));
+        v.y = Math.max(0, Math.min(v.y, full.h - v.h));
+        // If viewport is bigger than the map, center it
+        if (v.w > full.w) { v.x = -(v.w - full.w) / 2; }
+        if (v.h > full.h) { v.y = -(v.h - full.h) / 2; }
+    }
+
+    // ---- Map Pan (drag to navigate) ----
+    function initMapPan() {
         const svg = document.getElementById('map-svg');
-        if (svg) svg.style.transform = 'scale(1)';
+        if (!svg) return;
+
+        svg.addEventListener('mousedown', (e) => {
+            // Don't pan when clicking on a territory
+            if (e.target.classList.contains('country-path')) return;
+            mapPan.active = true;
+            mapPan.startX = e.clientX;
+            mapPan.startY = e.clientY;
+            const v = getMapView();
+            mapPan.viewX = v.x;
+            mapPan.viewY = v.y;
+            svg.style.cursor = 'grabbing';
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!mapPan.active) return;
+            const svg = document.getElementById('map-svg');
+            if (!svg) return;
+            const dx = e.clientX - mapPan.startX;
+            const dy = e.clientY - mapPan.startY;
+
+            // Convert screen pixels to SVG coordinate units
+            const rect = svg.getBoundingClientRect();
+            const scaleX = (getMapView().w) / rect.width;
+            const scaleY = (getMapView().h) / rect.height;
+
+            const v = getMapView();
+            v.x = mapPan.viewX - dx * scaleX;
+            v.y = mapPan.viewY - dy * scaleY;
+
+            clampViewBox();
+            applyViewBox();
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (mapPan.active) {
+                mapPan.active = false;
+                const svg = document.getElementById('map-svg');
+                if (svg) svg.style.cursor = 'grab';
+            }
+        });
+
+        // Touch support
+        let touchStartDist = 0;
+        let touchStartView = null;
+
+        svg.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1 && !e.target.classList.contains('country-path')) {
+                const t = e.touches[0];
+                mapPan.active = true;
+                mapPan.startX = t.clientX;
+                mapPan.startY = t.clientY;
+                const v = getMapView();
+                mapPan.viewX = v.x;
+                mapPan.viewY = v.y;
+            } else if (e.touches.length === 2) {
+                touchStartDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                const v = getMapView();
+                touchStartView = { w: v.w, h: v.h };
+            }
+        }, { passive: true });
+
+        svg.addEventListener('touchmove', (e) => {
+            if (!mapPan.active) return;
+            e.preventDefault();
+
+            if (e.touches.length === 1) {
+                const t = e.touches[0];
+                const dx = t.clientX - mapPan.startX;
+                const dy = t.clientY - mapPan.startY;
+
+                const rect = svg.getBoundingClientRect();
+                const scaleX = getMapView().w / rect.width;
+                const scaleY = getMapView().h / rect.height;
+
+                const v = getMapView();
+                v.x = mapPan.viewX - dx * scaleX;
+                v.y = mapPan.viewY - dy * scaleY;
+
+                clampViewBox();
+                applyViewBox();
+            } else if (e.touches.length === 2 && touchStartView) {
+                const dist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                const scale = dist / touchStartDist;
+                const v = getMapView();
+                v.w = Math.max(200, Math.min(5000, touchStartView.w / scale));
+                v.h = Math.max(200, Math.min(4000, touchStartView.h / scale));
+
+                // Keep center point stable during pinch
+                const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                const rect = svg.getBoundingClientRect();
+                const ratioX = (cx - rect.left) / rect.width * (touchStartView.w - v.w);
+                const ratioY = (cy - rect.top) / rect.height * (touchStartView.h - v.h);
+
+                v.x = touchStartView.x + ratioX / 2;
+                v.y = touchStartView.y + ratioY / 2;
+
+                clampViewBox();
+                applyViewBox();
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchend', () => {
+            mapPan.active = false;
+            touchStartView = null;
+        }, { passive: true });
     }
 
     // ---- UI Updates ----
@@ -873,6 +1032,7 @@ function createGame() {
     // ---- Initialize ----
     setupEventDelegation();
     setupLanguageSelectors();
+    initMapPan();
     checkAutoLogin();
 
     return { destroy };
