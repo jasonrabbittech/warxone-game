@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     branches: [main]
-    paths: ['game/**']
+    paths: ['frontend/**', 'backend/**']
   workflow_dispatch:
     inputs:
       version_bump:

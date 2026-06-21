@@ -3,11 +3,15 @@ name: CI
 on:
   pull_request:
     branches: [main, develop]
-    paths: ['game/**']
+    paths: ['frontend/**']
 
 jobs:
   validate:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -16,59 +20,38 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
-      - name: Validate HTML
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check JavaScript syntax (source files)
         run: |
-          if [ ! -f game/index.html ]; then
-            echo "::error::game/index.html not found"
+          find src -name '*.js' -exec node --check {} \;
+          echo "All source JS syntax checks passed"
+
+      - name: Build
+        run: npm run build
+
+      - name: Validate build output
+        run: |
+          if [ ! -f dist/index.html ]; then
+            echo "::error::dist/index.html not found after build"
             exit 1
           fi
-          # Check for basic HTML structure
-          if ! grep -q '<!DOCTYPE html>' game/index.html; then
-            echo "::error::Missing DOCTYPE declaration"
-            exit 1
-          fi
-          echo "HTML structure OK"
+          echo "Build output validated"
 
-      - name: Check JavaScript Syntax
+      - name: Check built JS syntax
         run: |
-          # Extract inline JS from HTML and validate
-          python3 -c "
-          import re, subprocess, sys
-          with open('game/index.html') as f:
-              html = f.read()
-          # Extract content between <script> tags
-          scripts = re.findall(r'<script>(.*?)</script>', html, re.DOTALL)
-          if not scripts:
-              print('No inline scripts found')
-              sys.exit(0)
-          for i, js in enumerate(scripts):
-              with open('/tmp/check.js', 'w') as f:
-                  f.write(js)
-              result = subprocess.run(['node', '--check', '/tmp/check.js'],
-                                      capture_output=True, text=True)
-              if result.returncode != 0:
-                  print(f'JS syntax error in script block {i+1}:')
-                  print(result.stderr)
-                  sys.exit(1)
-          print(f'All {len(scripts)} script blocks passed syntax check')
-          "
+          find dist/assets -name '*.js' -exec node --check {} \;
+          echo "All built JS syntax checks passed"
 
-      - name: Check PWA Manifest
+      - name: Validate PWA Manifest
         run: |
-          if [ ! -f game/manifest.json ]; then
-            echo "::warning::game/manifest.json not found — PWA will not work"
+          if [ ! -f public/manifest.json ]; then
+            echo "::warning::public/manifest.json not found — PWA will not work"
           else
-            python3 -c "import json; json.load(open('game/manifest.json'))"
+            python3 -c "import json; json.load(open('public/manifest.json'))"
             echo "manifest.json valid JSON"
-          fi
-
-      - name: Check File Size
-        run: |
-          SIZE=$(stat -f%z game/index.html 2>/dev/null || stat -c%s game/index.html)
-          MAX=3145728  # 3MB
-          if [ "$SIZE" -gt "$MAX" ]; then
-            echo "::warning::game/index.html is $(($SIZE / 1024))KB — consider splitting for performance"
-          else
-            echo "File size: $(($SIZE / 1024))KB — OK"
           fi

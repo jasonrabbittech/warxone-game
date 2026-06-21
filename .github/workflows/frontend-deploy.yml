@@ -1,5 +1,13 @@
 name: Frontend Deploy
 
+# EdgeOne Pages auto-deploys on Git push to main/develop branches.
+# EdgeOne reads edgeone.json at repo root for build configuration:
+#   - installCommand: "cd frontend && npm install"
+#   - buildCommand: "cd frontend && npm run build"
+#   - outputDirectory: "./frontend/dist"
+# This workflow serves as a build validation gate and artifact archive.
+# It does NOT deploy directly - EdgeOne handles deployment automatically.
+
 on:
   push:
     branches: [main, develop]
@@ -44,6 +52,8 @@ jobs:
       - name: Summary
         run: |
           echo "## Build Output" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "EdgeOne Pages will auto-deploy from this push." >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
           ls -lh dist/assets/ >> "$GITHUB_STEP_SUMMARY"
