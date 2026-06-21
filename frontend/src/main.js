@@ -290,11 +290,9 @@ function createGame() {
     // ViewBox-based map navigation: stores current viewport as {x, y, w, h}
     // Values from generate_realistic_map.py (Natural Earth geographic data)
     const MAP_VIEW = {
-        earth: { x: -20, y: -15, w: 2310, h: 930 },
-        mars:  { x: -25, y: -22, w: 1272, h: 1248 }
+        earth: { x: 130, y: -60, w: 3210, h: 1340 },
+        mars:  { x: 130, y: -60, w: 1270, h: 1260 }
     };
-    let mapPan = { active: false, startX: 0, startY: 0, viewX: 0, viewY: 0 };
-
     function getMapView() {
         return GameState.player.currentWorld === 'mars' ? MAP_VIEW.mars : MAP_VIEW.earth;
     }
@@ -356,7 +354,14 @@ function createGame() {
                 path.classList.add(isMars ? 'mars-enemy' : 'enemy');
             }
 
-            path.addEventListener('click', () => selectCountry(id));
+            path.addEventListener('click', (e) => {
+                // Ignore clicks that were actually drags (pan operations)
+                if (mapPan.dragged) {
+                    e.stopPropagation();
+                    return;
+                }
+                selectCountry(id);
+            });
             svg.appendChild(path);
 
             // Country label - use hex center instead of getBBox for better centering
@@ -557,6 +562,12 @@ function createGame() {
     }
 
     // ---- Map Zoom (viewBox-based) ----
+    // Full map bounds (from Natural Earth geographic data)
+    const MAP_BOUNDS = {
+        earth: { minX: 130, minY: -60, maxX: 3340, maxY: 1280 },
+        mars:  { minX: 130, minY: -60, maxX: 1400, maxY: 1200 }
+    };
+
     function zoomMap(factor) {
         const v = getMapView();
         const svg = document.getElementById('map-svg');
@@ -578,36 +589,48 @@ function createGame() {
     }
 
     function resetMapZoom() {
+        const bounds = GameState.player.currentWorld === 'mars' ? MAP_BOUNDS.mars : MAP_BOUNDS.earth;
         const v = getMapView();
-        const base = GameState.player.currentWorld === 'mars'
-            ? { x: 0, y: 0, w: 2500, h: 1700 }
-            : { x: 0, y: 0, w: 2150, h: 1400 };
-        Object.assign(v, base);
+        v.x = bounds.minX;
+        v.y = bounds.minY;
+        v.w = bounds.maxX - bounds.minX;
+        v.h = bounds.maxY - bounds.minY;
         applyViewBox();
     }
 
     function clampViewBox() {
+        const bounds = GameState.player.currentWorld === 'mars' ? MAP_BOUNDS.mars : MAP_BOUNDS.earth;
         const v = getMapView();
-        const full = GameState.player.currentWorld === 'mars'
-            ? { w: 2500, h: 1700 }
-            : { w: 2150, h: 1400 };
-        // Don't let viewport go outside map bounds
-        v.x = Math.max(0, Math.min(v.x, full.w - v.w));
-        v.y = Math.max(0, Math.min(v.y, full.h - v.h));
+        const fullW = bounds.maxX - bounds.minX;
+        const fullH = bounds.maxY - bounds.minY;
+
         // If viewport is bigger than the map, center it
-        if (v.w > full.w) { v.x = -(v.w - full.w) / 2; }
-        if (v.h > full.h) { v.y = -(v.h - full.h) / 2; }
+        if (v.w >= fullW) {
+            v.x = bounds.minX - (v.w - fullW) / 2;
+        } else {
+            v.x = Math.max(bounds.minX, Math.min(v.x, bounds.maxX - v.w));
+        }
+        if (v.h >= fullH) {
+            v.y = bounds.minY - (v.h - fullH) / 2;
+        } else {
+            v.y = Math.max(bounds.minY, Math.min(v.y, bounds.maxY - v.h));
+        }
     }
 
     // ---- Map Pan (drag to navigate) ----
+    // Uses drag threshold to distinguish pan (drag) from country click (tap)
+    const DRAG_THRESHOLD = 5; // pixels — below this is a click, above is a drag
+    let mapPan = { active: false, startX: 0, startY: 0, viewX: 0, viewY: 0, dragged: false };
+
     function initMapPan() {
         const svg = document.getElementById('map-svg');
         if (!svg) return;
 
+        // Mouse drag
         svg.addEventListener('mousedown', (e) => {
-            // Don't pan when clicking on a territory
-            if (e.target.classList.contains('country-path')) return;
+            e.preventDefault(); // prevent text selection during drag
             mapPan.active = true;
+            mapPan.dragged = false;
             mapPan.startX = e.clientX;
             mapPan.startY = e.clientY;
             const v = getMapView();
@@ -623,10 +646,16 @@ function createGame() {
             const dx = e.clientX - mapPan.startX;
             const dy = e.clientY - mapPan.startY;
 
+            // Mark as drag if moved beyond threshold
+            if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
+                mapPan.dragged = true;
+            }
+            if (!mapPan.dragged) return;
+
             // Convert screen pixels to SVG coordinate units
             const rect = svg.getBoundingClientRect();
-            const scaleX = (getMapView().w) / rect.width;
-            const scaleY = (getMapView().h) / rect.height;
+            const scaleX = getMapView().w / rect.width;
+            const scaleY = getMapView().h / rect.height;
 
             const v = getMapView();
             v.x = mapPan.viewX - dx * scaleX;
@@ -649,32 +678,37 @@ function createGame() {
         let touchStartView = null;
 
         svg.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 1 && !e.target.classList.contains('country-path')) {
-                const t = e.touches[0];
+            if (e.touches.length === 1) {
                 mapPan.active = true;
+                mapPan.dragged = false;
+                const t = e.touches[0];
                 mapPan.startX = t.clientX;
                 mapPan.startY = t.clientY;
                 const v = getMapView();
                 mapPan.viewX = v.x;
                 mapPan.viewY = v.y;
             } else if (e.touches.length === 2) {
+                mapPan.active = false; // stop single-touch pan
                 touchStartDist = Math.hypot(
                     e.touches[0].clientX - e.touches[1].clientX,
                     e.touches[0].clientY - e.touches[1].clientY
                 );
                 const v = getMapView();
-                touchStartView = { w: v.w, h: v.h };
+                touchStartView = { x: v.x, y: v.y, w: v.w, h: v.h };
             }
         }, { passive: true });
 
         svg.addEventListener('touchmove', (e) => {
-            if (!mapPan.active) return;
-            e.preventDefault();
-
-            if (e.touches.length === 1) {
+            if (e.touches.length === 1 && mapPan.active) {
+                e.preventDefault();
                 const t = e.touches[0];
                 const dx = t.clientX - mapPan.startX;
                 const dy = t.clientY - mapPan.startY;
+
+                if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
+                    mapPan.dragged = true;
+                }
+                if (!mapPan.dragged) return;
 
                 const rect = svg.getBoundingClientRect();
                 const scaleX = getMapView().w / rect.width;
@@ -687,6 +721,7 @@ function createGame() {
                 clampViewBox();
                 applyViewBox();
             } else if (e.touches.length === 2 && touchStartView) {
+                e.preventDefault();
                 const dist = Math.hypot(
                     e.touches[0].clientX - e.touches[1].clientX,
                     e.touches[0].clientY - e.touches[1].clientY
@@ -700,11 +735,11 @@ function createGame() {
                 const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
                 const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
                 const rect = svg.getBoundingClientRect();
-                const ratioX = (cx - rect.left) / rect.width * (touchStartView.w - v.w);
-                const ratioY = (cy - rect.top) / rect.height * (touchStartView.h - v.h);
+                const ratioX = (cx - rect.left) / rect.width;
+                const ratioY = (cy - rect.top) / rect.height;
 
-                v.x = touchStartView.x + ratioX / 2;
-                v.y = touchStartView.y + ratioY / 2;
+                v.x = touchStartView.x + (touchStartView.w - v.w) * ratioX;
+                v.y = touchStartView.y + (touchStartView.h - v.h) * ratioY;
 
                 clampViewBox();
                 applyViewBox();
