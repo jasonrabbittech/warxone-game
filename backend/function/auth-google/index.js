@@ -17,8 +17,8 @@ exports.main_handler = async (event) => {
     return handlePreflight(event.headers);
   }
 
-  // Check if Google SSO is configured
-  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+  // Check if Google SSO is configured (trim handles empty/whitespace strings from Terraform)
+  if (!process.env.GOOGLE_CLIENT_ID?.trim() || !process.env.GOOGLE_CLIENT_SECRET?.trim()) {
     return {
       statusCode: 501,
       headers: {
