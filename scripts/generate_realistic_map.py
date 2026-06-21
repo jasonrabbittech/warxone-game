@@ -700,7 +700,7 @@ def write_js_output(earth_result, mars_result, output_dir):
         clines.append(
             f'    {tid}: {{ name:"{n}", pop:{get_pop(n)}, level:{get_lvl(n)}, '
             f'owner:"ai", military:{get_mil(n)}, airports:{get_air(n)}, trains:{get_tra(n)}, '
-            f'adjacent:[{",".join(adj)}], world:"earth" }},'
+            f'adjacent:[{",".join(f\'"{a}"\' for a in adj)}], world:"earth" }},'
         )
     clines.append("};\n")
     cc = "\n".join(clines)
@@ -718,7 +718,7 @@ def write_js_output(earth_result, mars_result, output_dir):
             f'    {tid}: {{ name:"{mi["name"]}", pop:{mi["pop"]}, '
             f'level:{mi["level"]}, owner:"ai", military:{mi["military"]}, '
             f'airports:{mi["airports"]}, trains:{mi["trains"]}, '
-            f'adjacent:[{",".join(adj)}], world:"mars" }},'
+            f'adjacent:[{",".join(f\'"{a}"\' for a in adj)}], world:"mars" }},'
         )
     mclines.append("};\n")
     mcc = "\n".join(mclines)
