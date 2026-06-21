@@ -289,8 +289,8 @@ function createGame() {
     // ---- Map ----
     // ViewBox-based map navigation: stores current viewport as {x, y, w, h}
     const MAP_VIEW = {
-        earth: { x: 0, y: 0, w: 2150, h: 1400 },
-        mars:  { x: 0, y: 0, w: 2500, h: 1700 }
+        earth: { x: -45, y: -42, w: 1255, h: 1045 },
+        mars:  { x: -35, y: -22, w: 915, h: 732 }
     };
     let mapPan = { active: false, startX: 0, startY: 0, viewX: 0, viewY: 0 };
 
@@ -319,6 +319,25 @@ function createGame() {
 
         applyViewBox();
 
+        // Draw continent background labels for Earth
+        if (!isMars) {
+            const continentLabels = [
+                { text: 'AMERICAS', x: 90, y: 50, cls: 'continent-label' },
+                { text: 'EUROPE', x: 520, y: 35, cls: 'continent-label' },
+                { text: 'ASIA', x: 1040, y: 35, cls: 'continent-label' },
+                { text: 'AFRICA', x: 550, y: 590, cls: 'continent-label' },
+                { text: 'OCEANIA', x: 990, y: 430, cls: 'continent-label' },
+            ];
+            for (const cl of continentLabels) {
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.classList.add(cl.cls);
+                label.setAttribute('x', cl.x);
+                label.setAttribute('y', cl.y);
+                label.textContent = cl.text;
+                svg.appendChild(label);
+            }
+        }
+
         for (const [id, country] of Object.entries(countries)) {
             const pathData = paths[id];
             if (!pathData) continue;
@@ -339,21 +358,26 @@ function createGame() {
             path.addEventListener('click', () => selectCountry(id));
             svg.appendChild(path);
 
-            // Country label
+            // Country label - use hex center instead of getBBox for better centering
+            const bbox = path.getBBox();
+            const cx = bbox.x + bbox.width / 2;
+            const cy = bbox.y + bbox.height / 2;
+
             const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             label.classList.add('country-label');
-            const bbox = path.getBBox();
-            label.setAttribute('x', bbox.x + bbox.width / 2);
-            label.setAttribute('y', bbox.y + bbox.height / 2);
-            label.textContent = country.name.substring(0, 6);
+            label.setAttribute('x', cx);
+            label.setAttribute('y', cy + 2);
+            // Show full name if short, abbreviated if long
+            const name = country.name;
+            label.textContent = name.length <= 8 ? name : name.substring(0, 7) + '…';
             svg.appendChild(label);
 
             // Chest icon
             if (GameState.chests[id] && country.owner !== 'player') {
                 const chest = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 chest.classList.add('chest-icon');
-                chest.setAttribute('x', bbox.x + bbox.width / 2);
-                chest.setAttribute('y', bbox.y + 8);
+                chest.setAttribute('x', cx);
+                chest.setAttribute('y', bbox.y + 14);
                 chest.textContent = '\u{1F6E0}';
                 svg.appendChild(chest);
             }

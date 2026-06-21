@@ -1,7 +1,7 @@
 import { countries } from './countries.js';
 import { marsCountries } from './marsCountries.js';
 import { countryPaths } from './countryPaths.js';
-import { marsPaths } from './marsPaths.js';
+import { marsCountryPaths } from './marsPaths.js';
 import { cardRarities } from './cardRarities.js';
 import { quizQuestions } from './quizQuestions.js';
 import { giftCodes } from './giftCodes.js';
@@ -29,7 +29,7 @@ export const GameState = {
     countries,
     marsCountries,
     countryPaths,
-    marsCountryPaths: marsPaths,
+    marsCountryPaths,
     cardRarities,
     quizQuestions,
     giftCodes,
