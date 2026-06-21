@@ -37,7 +37,11 @@
     flex: 1;
     position: relative;
     overflow: hidden;
-    background: radial-gradient(circle at 20% 30%, rgba(0,20,40,0.8), var(--darker-bg));
+    /* Ocean-like background for Earth map */
+    background:
+        radial-gradient(ellipse at 25% 20%, rgba(20,60,100,0.35) 0%, transparent 50%),
+        radial-gradient(ellipse at 75% 70%, rgba(15,45,85,0.3) 0%, transparent 45%),
+        linear-gradient(180deg, #0a1628 0%, #0d1f38 40%, #091428 100%);
 }
 
 #map-svg {
@@ -47,73 +51,83 @@
     touch-action: pan-x pan-y pinch-zoom;
 }
 
-/* ─── Hex territory base style ─── */
+/* ─── Territory base style (realistic geographic borders) ─── */
 .country-path {
-    stroke: rgba(255,255,255,0.6);
-    stroke-width: 2;
+    stroke: rgba(220,235,255,0.55);
+    stroke-width: 1.5;
     stroke-linejoin: round;
-    fill: rgba(15,20,45,0.85);
+    stroke-linecap: round;
+    fill: rgba(18,28,52,0.88);
     cursor: pointer;
-    transition: fill 0.3s, stroke 0.3s;
+    transition: fill 0.25s, stroke 0.25s, stroke-width 0.2s;
     paint-order: stroke fill;
 }
 
 .country-path:hover {
-    stroke-width: 3;
-    filter: brightness(1.3);
+    stroke-width: 2.5;
+    stroke: rgba(255,255,255,0.85);
+    filter: brightness(1.25) saturate(1.2);
 }
 
+/* Player-owned territories */
 .country-path.owned {
-    fill: rgba(0,255,157,0.35);
-    stroke: var(--neon-green);
-    stroke-width: 3;
+    fill: rgba(0,200,130,0.32);
+    stroke: #00ffa0;
+    stroke-width: 2;
 }
 
+/* Adjacent (attackable) territories */
 .country-path.adjacent {
-    fill: rgba(240,255,0,0.3);
-    stroke: var(--neon-yellow);
-    stroke-width: 2.5;
+    fill: rgba(230,245,0,0.28);
+    stroke: #d4f00a;
+    stroke-width: 2;
 }
 
+/* Enemy territories */
 .country-path.enemy {
-    fill: rgba(255,0,255,0.15);
-    stroke: rgba(255,0,255,0.5);
-    stroke-width: 2;
+    fill: rgba(220,60,200,0.14);
+    stroke: rgba(220,120,210,0.5);
+    stroke-width: 1.5;
 }
 
+/* Mars player-owned */
 .country-path.mars-owned {
-    fill: rgba(255,102,0,0.35);
-    stroke: var(--neon-orange);
-    stroke-width: 3;
-}
-
-.country-path.mars-adjacent {
-    fill: rgba(255,102,0,0.25);
-    stroke: var(--neon-orange);
-    stroke-width: 2.5;
-}
-
-.country-path.mars-enemy {
-    fill: rgba(255,34,0,0.15);
-    stroke: rgba(255,34,0,0.5);
+    fill: rgba(255,140,0,0.32);
+    stroke: #ff8c00;
     stroke-width: 2;
 }
 
-/* ─── Territory labels ─── */
+/* Mars adjacent */
+.country-path.mars-adjacent {
+    fill: rgba(255,160,0,0.24);
+    stroke: #ffa000;
+    stroke-width: 2;
+}
+
+/* Mars enemy */
+.country-path.mars-enemy {
+    fill: rgba(255,80,30,0.14);
+    stroke: rgba(255,100,50,0.5);
+    stroke-width: 1.5;
+}
+
+/* ─── Territory labels (auto-sized per territory) ─── */
 .country-label {
-    font-size: 5.5px;
+    font-size: 5px;
     fill: #fff;
     text-anchor: middle;
     pointer-events: none;
     dominant-baseline: central;
     font-weight: 600;
-    text-shadow: 0 0 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.7);
+    text-shadow: 0 0 2px rgba(0,0,0,0.95), 0 0 5px rgba(0,0,0,0.8),
+                 0 0 8px rgba(0,0,16,0.7);
+    letter-spacing: 0.3px;
 }
 
 /* ─── Continent labels ─── */
 .continent-label {
     font-size: 9px;
-    fill: rgba(100,180,255,0.25);
+    fill: rgba(100,180,255,0.22);
     text-anchor: middle;
     pointer-events: none;
     font-weight: 700;
@@ -121,8 +135,14 @@
     text-transform: uppercase;
 }
 
-.chest-icon { font-size: 12px; pointer-events: none; text-anchor: middle; }
+.chest-icon {
+    font-size: 11px;
+    pointer-events: none;
+    text-anchor: middle;
+    dominant-baseline: central;
+}
 
+/* ─── Map zoom controls ─── */
 .map-controls {
     position: absolute;
     bottom: 15px;
@@ -137,7 +157,7 @@
     width: 42px;
     height: 42px;
     border-radius: 50%;
-    background: rgba(10,10,30,0.9);
+    background: rgba(10,10,30,0.92);
     border: var(--border-neon);
     color: var(--neon-blue);
     font-size: 1.2rem;
@@ -145,8 +165,19 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    transition: background 0.2s, transform 0.1s;
 }
 
+.map-btn:hover {
+    background: rgba(0,40,80,0.9);
+    transform: scale(1.05);
+}
+
+.map-btn:active {
+    transform: scale(0.96);
+}
+
+/* ─── Bottom navigation bar ─── */
 .bottom-nav {
     display: flex;
     justify-content: space-around;
@@ -168,10 +199,13 @@
     cursor: pointer;
     font-size: 0.75rem;
     min-height: 40px;
+    transition: color 0.2s;
 }
 
 .nav-btn.active { color: var(--neon-blue); }
+.nav-btn:hover { color: #fff; }
 
+/* ─── World toggle (Earth/Mars switcher) ─── */
 .world-toggle {
     position: absolute;
     top: 10px;

@@ -288,9 +288,10 @@ function createGame() {
 
     // ---- Map ----
     // ViewBox-based map navigation: stores current viewport as {x, y, w, h}
+    // Values from generate_realistic_map.py (Natural Earth geographic data)
     const MAP_VIEW = {
-        earth: { x: -45, y: -42, w: 1255, h: 1045 },
-        mars:  { x: -35, y: -22, w: 915, h: 732 }
+        earth: { x: -20, y: -15, w: 2310, h: 930 },
+        mars:  { x: -25, y: -22, w: 1272, h: 1248 }
     };
     let mapPan = { active: false, startX: 0, startY: 0, viewX: 0, viewY: 0 };
 
