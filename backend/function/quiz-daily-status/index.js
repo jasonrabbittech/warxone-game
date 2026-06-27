@@ -9,7 +9,8 @@ const { query, queryOne } = require('./shared/db');
 const { getUserIdFromHeaders } = require('./shared/jwt');
 const { ok, unauthorized, serverError, handlePreflight } = require('./shared/response');
 const dayjs = require('dayjs');
-require('dayjs/plugin/utc');
+const utc = require('dayjs/plugin/utc');
+dayjs.extend(utc);
 
 exports.main_handler = async (event) => {
   // Handle CORS preflight
@@ -25,14 +26,21 @@ exports.main_handler = async (event) => {
     }
 
     // Get current time in Hong Kong timezone (UTC+8)
-    const hkNow = dayjs().utcOffset(8);
+    const now = dayjs();
+    const hkNow = now.utcOffset(8);
     
     // Convert HK day range to UTC for database query (started_at is now stored as UTC)
-    const hkTodayStartUTC = hkNow.startOf('day').utc().format('YYYY-MM-DD HH:mm:ss');
-    const hkTodayEndUTC = hkNow.endOf('day').utc().format('YYYY-MM-DD HH:mm:ss');
+    const hkTodayStart = hkNow.startOf('day').format('YYYY-MM-DD HH:mm:ss');
+    const hkTodayEnd = hkNow.endOf('day').format('YYYY-MM-DD HH:mm:ss');
+    
+    // Convert to UTC for database query
+    const hkTodayStartUTC = dayjs(hkTodayStart).utc().format('YYYY-MM-DD HH:mm:ss');
+    const hkTodayEndUTC = dayjs(hkTodayEnd).utc().format('YYYY-MM-DD HH:mm:ss');
 
     console.log('Checking daily limit for user:', userId);
     console.log('HK Now:', hkNow.format('YYYY-MM-DD HH:mm:ss'));
+    console.log('HK Today Start (LOCAL):', hkTodayStart);
+    console.log('HK Today End (LOCAL):', hkTodayEnd);
     console.log('HK Today Start (UTC):', hkTodayStartUTC);
     console.log('HK Today End (UTC):', hkTodayEndUTC);
 
