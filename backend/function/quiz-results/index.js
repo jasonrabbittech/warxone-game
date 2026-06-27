@@ -22,8 +22,24 @@ exports.main_handler = async (event) => {
       return unauthorized('Authentication required', event.headers);
     }
 
-    // Get attempt ID from query string
-    const attemptId = event.queryStringParameters?.attempt_id;
+    // Get attempt ID from query string or POST body
+    let attemptId = null;
+    
+    // Try GET query string first
+    if (event.queryStringParameters && event.queryStringParameters.attempt_id) {
+      attemptId = event.queryStringParameters.attempt_id;
+    }
+    
+    // Try POST body if not found in query string
+    if (!attemptId && event.body) {
+      try {
+        const body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
+        attemptId = body.attempt_id;
+      } catch (e) {
+        // Ignore JSON parse error
+      }
+    }
+    
     if (!attemptId) {
       return badRequest('Missing attempt_id parameter', event.headers);
     }
