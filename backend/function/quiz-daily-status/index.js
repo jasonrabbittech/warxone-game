@@ -9,7 +9,7 @@ const { query } = require('./shared/db');
 const { getUserIdFromHeaders } = require('./shared/jwt');
 const { ok, unauthorized, serverError, handlePreflight } = require('./shared/response');
 const dayjs = require('dayjs');
-require('dayjs/plugin/utcOffset');
+require('dayjs/plugin/utc');
 
 exports.main_handler = async (event) => {
   // Handle CORS preflight

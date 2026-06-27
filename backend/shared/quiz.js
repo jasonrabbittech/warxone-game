@@ -98,7 +98,7 @@ function isDifficultyUnlocked(difficulty, playerLevel) {
  */
 async function checkDailyLimit(userId, startedAt) {
   const dayjs = require('dayjs');
-  const utcOffset = require('dayjs/plugin/utcOffset');
+  const utcOffset = require('dayjs/plugin/utc');
   dayjs.extend(utcOffset);
 
   // Convert to Hong Kong time (UTC+8)
