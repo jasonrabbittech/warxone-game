@@ -80,6 +80,10 @@ jobs:
               'auth-register', 'auth-login', 'auth-google',
               'auth-refresh', 'auth-logout',
               'game-save', 'game-load', 'game-delete',
+              'quiz-start', 'quiz-submit', 'quiz-results',
+              'quiz-daily-status',
+              'admin-quiz-list', 'admin-quiz-create',
+              'admin-quiz-update', 'admin-quiz-delete',
           ]
 
           if DEPLOY_FUNC == 'all' or DEPLOY_FUNC == '':
@@ -192,6 +196,10 @@ jobs:
               'auth-register', 'auth-login', 'auth-google',
               'auth-refresh', 'auth-logout',
               'game-save', 'game-load', 'game-delete',
+              'quiz-start', 'quiz-submit', 'quiz-results',
+              'quiz-daily-status',
+              'admin-quiz-list', 'admin-quiz-create',
+              'admin-quiz-update', 'admin-quiz-delete',
           ]
 
           summary_path = os.environ.get('GITHUB_STEP_SUMMARY', '/dev/null')

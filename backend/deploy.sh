@@ -32,6 +32,14 @@ ALL_FUNCTIONS=(
   game-save
   game-load
   game-delete
+  quiz-start
+  quiz-submit
+  quiz-results
+  quiz-daily-status
+  admin-quiz-list
+  admin-quiz-create
+  admin-quiz-update
+  admin-quiz-delete
 )
 
 # Determine which functions to deploy
