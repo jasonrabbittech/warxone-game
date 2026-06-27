@@ -4,6 +4,7 @@
   "private": true,
   "description": "WarXOne SCF backend functions",
   "dependencies": {
-    "mysql2": "^3.9.0"
+    "mysql2": "^3.9.0",
+    "dayjs": "^1.11.10"
   }
 }
