@@ -21,6 +21,9 @@ import { t, setLanguage, getCurrentLanguage } from './i18n/index.js';
 // API client
 import { auth, game, isLoggedIn, getStoredUser, getAccessToken, clearAuthData } from './api/client.js';
 
+// Quiz pages
+import { QuizPage } from './pages/quiz/index.js';
+
 // API layer: uses cloud API when logged in, localStorage as fallback
 const api = {
     async save(state) {
@@ -883,7 +886,39 @@ function createGame() {
         }
     }
     function showAllianceScreen() { notify('Alliance', 'Alliance system coming in Phase 6'); }
-    function showQuizScreen() { notify('Quiz', 'Quiz system coming in Phase 5'); }
+    function showQuizScreen() {
+        // Get game container
+        const container = document.getElementById('game-container');
+        if (!container) {
+            notify('Error', 'Game container not found');
+            return;
+        }
+
+        // Get access token
+        const token = getAccessToken();
+        if (!token) {
+            notify('Login Required', 'Please login to play quiz');
+            return;
+        }
+
+        // Create QuizPage instance
+        const quizPage = new QuizPage(
+            container,
+            token,
+            () => {
+                // onBack callback: return to main menu
+                showScreen('main-menu');
+            }
+        );
+
+        // Initialize quiz page
+        quizPage.init();
+
+        // Store reference for cleanup
+        if (!window._quizPageInstance) {
+            window._quizPageInstance = quizPage;
+        }
+    }
     function showSettingsScreen() {
         saveGame(); // async save
         notify('Settings', 'Game data saved');
