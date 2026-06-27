@@ -32,8 +32,20 @@ exports.main_handler = async (event) => {
     const hkTodayEndUTC = hkNow.endOf('day').utc().format('YYYY-MM-DD HH:mm:ss');
 
     console.log('Checking daily limit for user:', userId);
+    console.log('HK Now:', hkNow.format('YYYY-MM-DD HH:mm:ss'));
     console.log('HK Today Start (UTC):', hkTodayStartUTC);
     console.log('HK Today End (UTC):', hkTodayEndUTC);
+
+    // First, let's check ALL recent attempts for this user (for debugging)
+    const allAttempts = await query(
+      `SELECT id, started_at, completed_at, DATE(started_at) as started_date 
+       FROM quiz_attempts 
+       WHERE user_id = ? 
+       ORDER BY started_at DESC 
+       LIMIT 5`,
+      [userId]
+    );
+    console.log('All recent attempts:', JSON.stringify(allAttempts));
 
     // Check if player already has a completed attempt today (HK time = UTC+8)
     // started_at is now stored as UTC from Node.js, so we compare with UTC time range
@@ -47,7 +59,7 @@ exports.main_handler = async (event) => {
       [userId, hkTodayStartUTC, hkTodayEndUTC]
     );
 
-    console.log('Found attempt:', attempt);
+    console.log('Found attempt (completed today):', attempt);
 
     if (attempt) {
       // Already played today, calculate time until next attempt (midnight Hong Kong time)
