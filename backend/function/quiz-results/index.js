@@ -43,8 +43,9 @@ exports.main_handler = async (event) => {
     }
 
     // Parse questions and answers
-    const questions = JSON.parse(attempt.questions);
-    const answers = JSON.parse(attempt.answers);
+    // Parse questions and answers (handle both JSON string and object)
+    const questions = typeof attempt.questions === 'string' ? JSON.parse(attempt.questions) : attempt.questions;
+    const answers = typeof attempt.answers === 'string' ? JSON.parse(attempt.answers) : (attempt.answers || []);
 
     // Get question details for per-question breakdown
     const questionIds = questions.map(q => q.id);

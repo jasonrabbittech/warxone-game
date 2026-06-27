@@ -46,9 +46,9 @@ exports.main_handler = async (event) => {
       return badRequest('Quiz already completed', event.headers);
     }
 
-    // Parse questions and answers
-    const questions = JSON.parse(attempt.questions);
-    let answers = JSON.parse(attempt.answers);
+    // Parse questions and answers (handle both JSON string and object)
+    const questions = typeof attempt.questions === 'string' ? JSON.parse(attempt.questions) : attempt.questions;
+    const answers = typeof attempt.answers === 'string' ? JSON.parse(attempt.answers) : (attempt.answers || []);
 
     // Get current question
     if (question_index >= questions.length) {
