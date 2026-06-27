@@ -29,13 +29,17 @@ exports.main_handler = async (event) => {
     const now = dayjs();
     const hkNow = now.utcOffset(8);
     
-    // Convert HK day range to UTC for database query (started_at is now stored as UTC)
-    const hkTodayStart = hkNow.startOf('day').format('YYYY-MM-DD HH:mm:ss');
-    const hkTodayEnd = hkNow.endOf('day').format('YYYY-MM-DD HH:mm:ss');
+    // Get start and end of today in HK time (keep as dayjs objects for proper UTC conversion)
+    const hkStartOfDay = hkNow.startOf('day');  // 2026-06-27 00:00:00 (HK)
+    const hkEndOfDay = hkNow.endOf('day');      // 2026-06-27 23:59:59 (HK)
     
-    // Convert to UTC for database query
-    const hkTodayStartUTC = dayjs(hkTodayStart).utc().format('YYYY-MM-DD HH:mm:ss');
-    const hkTodayEndUTC = dayjs(hkTodayEnd).utc().format('YYYY-MM-DD HH:mm:ss');
+    // Format for logging (HK local time)
+    const hkTodayStart = hkStartOfDay.format('YYYY-MM-DD HH:mm:ss');
+    const hkTodayEnd = hkEndOfDay.format('YYYY-MM-DD HH:mm:ss');
+    
+    // Convert to UTC for database query (properly convert from HK time to UTC)
+    const hkTodayStartUTC = hkStartOfDay.utc().format('YYYY-MM-DD HH:mm:ss');
+    const hkTodayEndUTC = hkEndOfDay.utc().format('YYYY-MM-DD HH:mm:ss');
 
     console.log('Checking daily limit for user:', userId);
     console.log('HK Now:', hkNow.format('YYYY-MM-DD HH:mm:ss'));
