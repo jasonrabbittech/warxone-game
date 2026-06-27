@@ -102,7 +102,7 @@ async function checkDailyLimit(userId, startedAt) {
   dayjs.extend(utcOffset);
 
   // Convert to Hong Kong time (UTC+8)
-  const hkTime = dayjs(startedAt).utcOffset(8 * 60);
+  const hkTime = dayjs(startedAt).utcOffset(8);
   const hkDayStart = hkTime.startOf('day');
   const hkDayEnd = hkTime.endOf('day');
 
@@ -130,7 +130,7 @@ async function checkDailyLimit(userId, startedAt) {
     if (rows.length > 0) {
       // Already played today, calculate time until next attempt (midnight Hong Kong time)
       const nextMidnight = hkDayEnd.add(1, 'second');
-      const nextAttemptIn = nextMidnight.diff(dayjs().utcOffset(8 * 60), 'second');
+      const nextAttemptIn = nextMidnight.diff(dayjs().utcOffset(8), 'second');
       return { canPlay: false, nextAttemptIn: Math.max(0, nextAttemptIn) };
     }
 
@@ -141,7 +141,7 @@ async function checkDailyLimit(userId, startedAt) {
        WHERE user_id = ? 
        AND started_at < ? 
        AND completed_at IS NULL`,
-      ['abandoned', userId, dayjs().utcOffset(8 * 60).subtract(1, 'hour').toDate()]
+      ['abandoned', userId, dayjs().utcOffset(8).subtract(1, 'hour').toDate()]
     );
 
     return { canPlay: true, nextAttemptIn: 0 };

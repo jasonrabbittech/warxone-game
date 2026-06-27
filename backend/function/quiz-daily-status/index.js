@@ -25,7 +25,7 @@ exports.main_handler = async (event) => {
     }
 
     // Convert to Hong Kong time (UTC+8)
-    const now = dayjs().utcOffset(8 * 60);
+    const now = dayjs().utcOffset(8);
     const hkDayStart = now.startOf('day');
     const hkDayEnd = now.endOf('day');
 
