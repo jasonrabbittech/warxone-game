@@ -42,9 +42,14 @@ exports.main_handler = async (event) => {
       return badRequest('Quiz attempt not found', event.headers);
     }
 
-    if (attempt.completed_at) {
+    // Check if quiz is already completed (completed_at is not NULL and not 'abandoned')
+    if (attempt.completed_at && attempt.completed_at !== 'abandoned') {
+      console.log('Quiz already completed at:', attempt.completed_at);
       return badRequest('Quiz already completed', event.headers);
     }
+    
+    console.log('Submitting answer for question_index:', question_index);
+    console.log('Attempt completed_at:', attempt.completed_at);
 
     // Parse questions and answers (handle both JSON string and object)
     const questions = typeof attempt.questions === 'string' ? JSON.parse(attempt.questions) : attempt.questions;
