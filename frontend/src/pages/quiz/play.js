@@ -78,11 +78,18 @@ export class QuizPlay {
   /**
    * Render current question
    */
-  renderQuestion() {
+  async renderQuestion() {
     if (this.currentIndex >= this.questions.length) {
-      // All questions answered, show results
+      // All questions answered, fetch daily status then show results
+      let dailyStatus = null;
+      try {
+        dailyStatus = await QuizService.getDailyStatus(this.token);
+      } catch (err) {
+        console.error('Failed to fetch daily status:', err);
+      }
+      
       if (this.onComplete) {
-        this.onComplete(this.attemptId);
+        this.onComplete(this.attemptId, dailyStatus);
       }
       return;
     }

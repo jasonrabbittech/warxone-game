@@ -7,10 +7,12 @@ export class QuizResults {
   /**
    * @param {HTMLElement} container - DOM element to render results
    * @param {Object} results - Results object {score, total, correctCount, incorrectCount, tokensEarned, questions: [{question, selected, correct, explanation, tokens}]}
+   * @param {Object} [dailyStatus] - Optional daily status {canPlay: boolean, nextAttemptIn: number}
    */
-  constructor(container, results) {
+  constructor(container, results, dailyStatus = null) {
     this.container = container;
     this.results = results;
+    this.dailyStatus = dailyStatus;
     this.isDetailsVisible = false;
   }
 
@@ -44,6 +46,7 @@ export class QuizResults {
         <div class="results-details" id="results-details">
           ${detailsHtml}
         </div>
+        ${this.renderDailyLimitMessage()}
         <button class="results-close-btn" id="close-results">Close</button>
       </div>
     `;
@@ -59,6 +62,28 @@ export class QuizResults {
     closeBtn.addEventListener('click', () => {
       this.container.innerHTML = '';
     });
+  }
+
+  /**
+   * Render daily limit message if limit reached
+   * @returns {string}
+   */
+  renderDailyLimitMessage() {
+    if (!this.dailyStatus || this.dailyStatus.canPlay) {
+      return '';
+    }
+
+    const nextAttemptIn = this.dailyStatus.nextAttemptIn || 0;
+    const hours = Math.floor(nextAttemptIn / 3600);
+    const minutes = Math.floor((nextAttemptIn % 3600) / 60);
+    
+    return `
+      <div class="results-daily-limit">
+        <p class="daily-limit-title">Daily Limit Reached</p>
+        <p class="daily-limit-message">You have already completed a quiz today.</p>
+        <p class="daily-limit-countdown">Next attempt in: ${hours}h ${minutes}m</p>
+      </div>
+    `;
   }
 
   /**
