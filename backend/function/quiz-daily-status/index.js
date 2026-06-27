@@ -24,17 +24,19 @@ exports.main_handler = async (event) => {
       return unauthorized('Authentication required', event.headers);
     }
 
-    // Get current date in Hong Kong timezone (UTC+8)
+    // Get current time in Hong Kong timezone (UTC+8)
     const hkNow = dayjs().utcOffset(8);
-    const hkTodayStart = hkNow.startOf('day').format('YYYY-MM-DD HH:mm:ss');
-    const hkTodayEnd = hkNow.endOf('day').format('YYYY-MM-DD HH:mm:ss');
+    
+    // Convert HK day range to UTC for database query (started_at is now stored as UTC)
+    const hkTodayStartUTC = hkNow.startOf('day').utc().format('YYYY-MM-DD HH:mm:ss');
+    const hkTodayEndUTC = hkNow.endOf('day').utc().format('YYYY-MM-DD HH:mm:ss');
 
     console.log('Checking daily limit for user:', userId);
-    console.log('HK Today Start:', hkTodayStart);
-    console.log('HK Today End:', hkTodayEnd);
+    console.log('HK Today Start (UTC):', hkTodayStartUTC);
+    console.log('HK Today End (UTC):', hkTodayEndUTC);
 
-    // Check if player already has a completed attempt today (Hong Kong time)
-    // Strategy: Check if started_at (stored as HK time in DB) is within today's HK time range
+    // Check if player already has a completed attempt today (HK time = UTC+8)
+    // started_at is now stored as UTC from Node.js, so we compare with UTC time range
     const attempt = await queryOne(
       `SELECT id, started_at, completed_at FROM quiz_attempts 
        WHERE user_id = ? 
@@ -42,7 +44,7 @@ exports.main_handler = async (event) => {
        AND started_at <= ?
        AND completed_at IS NOT NULL
        LIMIT 1`,
-      [userId, hkTodayStart, hkTodayEnd]
+      [userId, hkTodayStartUTC, hkTodayEndUTC]
     );
 
     console.log('Found attempt:', attempt);
@@ -63,14 +65,15 @@ exports.main_handler = async (event) => {
     }
 
     // Also check for abandoned attempts > 1 hour old (release daily limit slot)
-    const oneHourAgo = hkNow.subtract(1, 'hour').format('YYYY-MM-DD HH:mm:ss');
+    // Use UTC time for database query (started_at is stored as UTC)
+    const oneHourAgoUTC = dayjs().utc().subtract(1, 'hour').format('YYYY-MM-DD HH:mm:ss');
     await query(
       `UPDATE quiz_attempts 
        SET completed_at = ? 
        WHERE user_id = ? 
        AND started_at < ?
        AND completed_at IS NULL`,
-      ['abandoned', userId, oneHourAgo]
+      ['abandoned', userId, oneHourAgoUTC]
     );
 
     console.log('Can play quiz today');

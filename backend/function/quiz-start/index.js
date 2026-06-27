@@ -66,11 +66,14 @@ exports.main_handler = async (event) => {
     const attemptId = require('crypto').randomUUID();
     const questionsJson = JSON.stringify(questions.map(q => ({ id: q.id, time_spent: 0 })));
     const answersJson = JSON.stringify([]);
+    
+    // Use explicit UTC timestamp (not MySQL NOW() to avoid timezone issues)
+    const startedAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
     await execute(
       `INSERT INTO quiz_attempts (id, user_id, difficulty, questions, answers, started_at) 
-       VALUES (?, ?, ?, ?, ?, NOW())`,
-      [attemptId, userId, difficulty, questionsJson, answersJson]
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [attemptId, userId, difficulty, questionsJson, answersJson, startedAt]
     );
 
     // Return questions (without correct answers) and attempt ID
