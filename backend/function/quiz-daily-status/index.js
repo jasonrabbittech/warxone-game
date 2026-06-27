@@ -10,7 +10,6 @@ const { getUserIdFromHeaders } = require('./shared/jwt');
 const { ok, unauthorized, serverError, handlePreflight } = require('./shared/response');
 const dayjs = require('dayjs');
 require('dayjs/plugin/utc');
-require('dayjs/plugin/timezone');
 
 exports.main_handler = async (event) => {
   // Handle CORS preflight
