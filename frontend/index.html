@@ -132,6 +132,52 @@
         </div>
     </div>
 
+    <!-- Multiplayer Attack Dialog -->
+    <div id="multiplayer-attack-dialog" class="modal">
+        <div class="modal-content">
+            <h2>Attack Country</h2>
+            <div class="country-info">
+                <div class="country-name"></div>
+                <div class="country-pop"></div>
+                <div class="country-military"></div>
+            </div>
+            <p>Are you sure you want to attack this country?</p>
+            <div class="battle-estimation">
+                <div class="estimation-title">Battle Estimation:</div>
+                <div class="estimation-details">Calculating win probability...</div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-pink" data-action="multiplayer-attack">Attack!</button>
+                <button class="btn" data-action="cancel-attack">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Battle Progress UI -->
+    <div id="battle-progress-ui" class="battle-progress">
+        <div class="battle-progress-title">Battle in Progress</div>
+        <div class="battle-progress-bars">
+            <div class="progress-bar attacker">
+                <div class="progress-fill attacker-progress" style="width: 100%"></div>
+                <span class="progress-label">Attacker</span>
+            </div>
+            <div class="progress-bar defender">
+                <div class="progress-fill defender-progress" style="width: 100%"></div>
+                <span class="progress-label">Defender</span>
+            </div>
+        </div>
+        <div class="battle-log"></div>
+        <button class="btn btn-green" data-action="retreat-multiplayer">Retreat</button>
+    </div>
+
+    <!-- Battle Result UI -->
+    <div id="battle-result-ui" class="battle-result">
+        <div class="result-title">Battle Result</div>
+        <div class="result-text"></div>
+        <div class="result-details"></div>
+        <button class="btn" data-action="close-battle-result">Close</button>
+    </div>
+
     <!-- Pause Menu -->
     <div class="pause-menu" id="pause-menu">
         <div class="pause-container">
@@ -144,6 +190,10 @@
 
     <button class="mobile-nav-toggle" data-action="toggle-mobile-nav">Menu</button>
 </div>
+
+<!-- Test Script (uncomment for testing multiplayer integration) -->
+<!-- <script type="module" src="/src/test-multiplayer.js"></script> -->
+
 <script type="module" src="/src/main.js"></script>
 </body>
 </html>

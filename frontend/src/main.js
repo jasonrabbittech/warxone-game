@@ -21,6 +21,9 @@ import { t, setLanguage, getCurrentLanguage } from './i18n/index.js';
 // API client
 import { auth, game, isLoggedIn, getStoredUser, getAccessToken, clearAuthData } from './api/client.js';
 
+// Battle manager for multiplayer
+import { getBattleManager } from './game/BattleManager.js';
+
 // Quiz pages
 import { QuizPage } from './pages/quiz/index.js';
 
@@ -65,6 +68,82 @@ const api = {
 };
 
 // ==================== WARXONE GAME ====================
+// Battle manager instance (multiplayer)
+let battleManager = null;
+
+// Initialize battle manager after login
+async function initializeBattleManager() {
+    try {
+        const token = getAccessToken();
+        if (!token) {
+            console.warn('[Main] No access token available for BattleManager');
+            return;
+        }
+
+        const { getBattleManager } = await import('./game/BattleManager.js');
+        battleManager = await getBattleManager();
+        
+        console.log('[Main] BattleManager initialized successfully');
+
+        // Listen for battle events
+        document.addEventListener('battle-started', (event) => {
+            console.log('[Main] Battle started:', event.detail);
+            // Update UI to show battle notification
+            showBattleNotification(event.detail);
+        });
+
+        document.addEventListener('battle-update', (event) => {
+            console.log('[Main] Battle update:', event.detail);
+            // Update battle progress UI
+            updateBattleProgress(event.detail);
+        });
+
+        document.addEventListener('battle-result', (event) => {
+            console.log('[Main] Battle result:', event.detail);
+            // Show battle result
+            showBattleResult(event.detail);
+        });
+
+    } catch (error) {
+        console.error('[Main] Failed to initialize BattleManager:', error);
+        // Fall back to single-player battle system
+        console.log('[Main] Using single-player battle system');
+    }
+}
+
+// Show battle notification
+function showBattleNotification(battleData) {
+    const notification = document.getElementById('battle-notification');
+    if (notification) {
+        notification.textContent = `Battle started: ${battleData.attackerId} vs ${battleData.defenderId}`;
+        notification.style.display = 'block';
+        setTimeout(() => {
+            notification.style.display = 'none';
+        }, 5000);
+    }
+}
+
+// Update battle progress UI
+function updateBattleProgress(battleData) {
+    // TODO: Update battle progress bar, casualties display, etc.
+    console.log('[Main] Updating battle progress:', battleData.progress);
+}
+
+// Show battle result
+function showBattleResult(battleData) {
+    const resultText = battleData.status === 'attacker_wins' ? 'Attacker wins!' : 
+                      battleData.status === 'defender_wins' ? 'Defender wins!' : 'Retreat!';
+    
+    const notification = document.getElementById('battle-result-notification');
+    if (notification) {
+        notification.textContent = `Battle ended: ${resultText}`;
+        notification.style.display = 'block';
+        setTimeout(() => {
+            notification.style.display = 'none';
+        }, 5000);
+    }
+}
+
 function createGame() {
     const timers = [];
 
@@ -108,6 +187,8 @@ function createGame() {
             case 'nav-settings': showSettingsScreen(); break;
             case 'auto-battle': autoBattle(); break;
             case 'retreat': retreatBattle(); break;
+            case 'retreat-multiplayer': retreatBattle(); break;
+            case 'close-battle-result': closeBattleResult(); break;
             case 'save-game': saveGame(); break;
             case 'resume': togglePause(); break;
             case 'quit-to-menu': quitToMenu(); break;
@@ -117,6 +198,14 @@ function createGame() {
             case 'mars-story-skip': skipMars(); break;
             case 'toggle-mobile-nav': toggleMobileNav(); break;
             default: break;
+        }
+    }
+
+    // Close battle result UI
+    function closeBattleResult() {
+        const resultUI = document.getElementById('battle-result-ui');
+        if (resultUI) {
+            resultUI.classList.remove('active');
         }
     }
 
@@ -142,6 +231,11 @@ function createGame() {
             emailEl.textContent = user.email || '';
             indicator.style.display = 'flex';
         }
+
+        // Initialize BattleManager for multiplayer
+        initializeBattleManager().catch(error => {
+            console.warn('[Main] BattleManager initialization failed:', error);
+        });
     }
 
     function showAuthError(elementId, message) {
@@ -416,11 +510,143 @@ function createGame() {
             // Show country info
             notify(country.name, `Pop: ${formatPop(country.pop)} | Military: ${country.military}`);
         } else if (isAdjacent(id)) {
-            // Attack
-            startBattle(id);
+            // Attack - check if multiplayer battle is available
+            if (battleManager && battleManager.connected) {
+                // Multiplayer battle
+                showMultiplayerAttackDialog(id, country);
+            } else {
+                // Single player battle
+                startBattle(id);
+            }
         } else {
             notify(country.name, 'Not adjacent to your territories');
         }
+    }
+
+    // Show multiplayer attack dialog
+    function showMultiplayerAttackDialog(countryId, country) {
+        const dialog = document.getElementById('multiplayer-attack-dialog');
+        if (!dialog) return;
+
+        dialog.querySelector('.country-name').textContent = country.name;
+        dialog.querySelector('.country-pop').textContent = `Pop: ${formatPop(country.pop)}`;
+        dialog.querySelector('.country-military').textContent = `Military: ${country.military}`;
+
+        // Set up attack button
+        const attackBtn = dialog.querySelector('[data-action="multiplayer-attack"]');
+        attackBtn.onclick = () => {
+            dialog.classList.remove('active');
+            startMultiplayerBattle(countryId);
+        };
+
+        // Set up cancel button
+        const cancelBtn = dialog.querySelector('[data-action="cancel-attack"]');
+        cancelBtn.onclick = () => {
+            dialog.classList.remove('active');
+        };
+
+        dialog.classList.add('active');
+    }
+
+    // Start multiplayer battle
+    async function startMultiplayerBattle(countryId) {
+        try {
+            const isMars = GameState.player.currentWorld === 'mars';
+            const countries = isMars ? GameState.marsCountries : GameState.countries;
+            const defender = countries[countryId];
+
+            if (!defender) return;
+
+            // Check cooldown
+            if (GameState.cooldowns.global > Date.now()) {
+                notify('Cooldown', 'Wait for the cooldown to finish');
+                return;
+            }
+
+            // Start battle via BattleManager
+            const result = await battleManager.startBattle(countryId, defender.owner || 'ai');
+
+            if (result.success) {
+                notify('Battle Started', `Attacking ${defender.name}...`);
+                showBattleProgressUI(result.battleId);
+            } else {
+                notify('Battle Failed', result.error || 'Failed to start battle');
+            }
+        } catch (error) {
+            console.error('[Main] Failed to start multiplayer battle:', error);
+            notify('Battle Error', error.message || 'Failed to start battle');
+        }
+    }
+
+    // Show battle progress UI
+    function showBattleProgressUI(battleId) {
+        const progressUI = document.getElementById('battle-progress-ui');
+        if (!progressUI) return;
+
+        progressUI.dataset.battleId = battleId;
+        progressUI.classList.add('active');
+
+        // Update battle progress when events are received
+        document.addEventListener('battle-update', (event) => {
+            if (event.detail.battleId === battleId) {
+                updateBattleProgressUI(event.detail);
+            }
+        });
+
+        document.addEventListener('battle-result', (event) => {
+            if (event.detail.battleId === battleId) {
+                showBattleResultUI(event.detail);
+            }
+        });
+    }
+
+    // Update battle progress UI
+    function updateBattleProgressUI(battleData) {
+        const progressUI = document.getElementById('battle-progress-ui');
+        if (!progressUI) return;
+
+        const attackerProgress = progressUI.querySelector('.attacker-progress');
+        const defenderProgress = progressUI.querySelector('.defender-progress');
+        const battleLog = progressUI.querySelector('.battle-log');
+
+        if (attackerProgress && battleData.attackerProgress !== undefined) {
+            attackerProgress.style.width = `${battleData.attackerProgress}%`;
+        }
+
+        if (defenderProgress && battleData.defenderProgress !== undefined) {
+            defenderProgress.style.width = `${battleData.defenderProgress}%`;
+        }
+
+        if (battleLog && battleData.log) {
+            const logEntry = document.createElement('div');
+            logEntry.textContent = battleData.log;
+            battleLog.appendChild(logEntry);
+            battleLog.scrollTop = battleLog.scrollHeight;
+        }
+    }
+
+    // Show battle result UI
+    function showBattleResultUI(battleData) {
+        const progressUI = document.getElementById('battle-progress-ui');
+        if (progressUI) {
+            progressUI.classList.remove('active');
+        }
+
+        const resultUI = document.getElementById('battle-result-ui');
+        if (!resultUI) return;
+
+        const resultText = battleData.status === 'attacker_wins' ? 'Victory!' :
+                          battleData.status === 'defender_wins' ? 'Defeat!' : 'Retreat!';
+
+        resultUI.querySelector('.result-text').textContent = resultText;
+        resultUI.querySelector('.result-details').textContent = battleData.message || '';
+
+        resultUI.classList.add('active');
+
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            resultUI.classList.remove('active');
+        }, 5000);
     }
 
     // ---- Battle ----
@@ -460,6 +686,13 @@ function createGame() {
     }
 
     function autoBattle() {
+        // Check if multiplayer battle is active
+        if (battleManager && battleManager.connected && battleManager.currentBattle) {
+            // Multiplayer battle - cannot use auto battle, wait for server result
+            notify('Multiplayer Battle', 'Waiting for battle result from server...');
+            return;
+        }
+
         if (!GameState.battle || !GameState.battle.active) return;
 
         const battle = GameState.battle;
@@ -474,6 +707,23 @@ function createGame() {
     }
 
     function retreatBattle() {
+        // Check if multiplayer battle is active
+        if (battleManager && battleManager.connected && battleManager.currentBattle) {
+            // Multiplayer battle - retreat via BattleManager
+            battleManager.retreatBattle().then(result => {
+                if (result.success) {
+                    notify('Retreat', 'Successfully retreated from battle');
+                } else {
+                    notify('Retreat Failed', result.error || 'Failed to retreat');
+                }
+            }).catch(error => {
+                console.error('[Main] Failed to retreat from multiplayer battle:', error);
+                notify('Retreat Error', error.message || 'Failed to retreat');
+            });
+            return;
+        }
+
+        // Single player battle retreat
         if (GameState.battle) {
             GameState.battle.active = false;
             if (GameState.battle.interval) clearInterval(GameState.battle.interval);

@@ -104,8 +104,8 @@
 
 ## 3. 多人游戏模块 / Multiplayer Modules
 
-### 3.1 实时通信模块 (未实现)
-- **状态**: ❌ 未实现
+### 3.1 实时通信模块 (规范已定义)
+- **状态**: 📋 规范已定义 (`.specify/specs/004-multiplayer/`)
 - **技术**: 腾讯云 API 网关 (WebSocket) + Redis
 - **可独立开发**: 是 (独立于核心游戏)
 - **功能**:
@@ -113,24 +113,27 @@
   - 实时消息路由
   - 房间/大厅管理
 - **文件**: `backend/function/ws-connect`, `backend/function/ws-disconnect`, `backend/function/ws-message`
+- **规范**: 详见 `.specify/specs/004-multiplayer/system/spec.md`
 
-### 3.2 多人对战模块 (未实现)
-- **状态**: ❌ 未实现
+### 3.2 多人对战模块 (规范已定义)
+- **状态**: 📋 规范已定义 (`.specify/specs/004-multiplayer/`)
 - **技术**: SCF + WebSocket + Redis
 - **可独立开发**: 否 (依赖 3.1)
 - **功能**:
   - 创建/加入对战房间
   - 实时同步游戏状态
   - 对战匹配系统
+- **规范**: 详见 `.specify/specs/004-multiplayer/system/spec.md` (User Story 1)
 
-### 3.3 排行榜模块 (未实现)
-- **状态**: ❌ 未实现
-- **技术**: TDSQL-C + SCF
+### 3.3 排行榜模块 (规范已定义)
+- **状态**: 📋 规范已定义 (`.specify/specs/004-multiplayer/`)
+- **技术**: TDSQL-C + SCF + Redis
 - **可独立开发**: 是
 - **功能**:
   - 全球排行榜
   - 每周/每月排行榜
   - 好友排行榜
+- **规范**: 详见 `.specify/specs/004-multiplayer/system/spec.md` (User Story 4)
 
 ---
 

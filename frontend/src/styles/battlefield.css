@@ -75,3 +75,220 @@
     0%, 100% { box-shadow: 0 0 8px var(--neon-yellow); }
     50% { box-shadow: 0 0 20px var(--neon-pink); }
 }
+
+/* Multiplayer Attack Dialog */
+#multiplayer-attack-dialog {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    z-index: 600;
+    justify-content: center;
+    align-items: center;
+}
+
+#multiplayer-attack-dialog.active {
+    display: flex;
+}
+
+#multiplayer-attack-dialog .modal-content {
+    width: 92%;
+    max-width: 500px;
+    background: var(--panel-bg);
+    border: var(--border-neon);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+#multiplayer-attack-dialog h2 {
+    text-align: center;
+    color: var(--neon-pink);
+    font-size: 1.4rem;
+}
+
+#multiplayer-attack-dialog .country-info {
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+}
+
+#multiplayer-attack-dialog .country-name {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--neon-blue);
+    margin-bottom: 8px;
+}
+
+#multiplayer-attack-dialog .country-pop,
+#multiplayer-attack-dialog .country-military {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 4px 0;
+}
+
+#multiplayer-attack-dialog .battle-estimation {
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 0.9rem;
+}
+
+#multiplayer-attack-dialog .estimation-title {
+    color: var(--neon-yellow);
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+#multiplayer-attack-dialog .modal-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* Battle Progress UI */
+#battle-progress-ui {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 92%;
+    max-width: 600px;
+    background: var(--panel-bg);
+    border: var(--border-neon);
+    border-radius: 12px;
+    padding: 20px;
+    z-index: 550;
+    flex-direction: column;
+    gap: 15px;
+}
+
+#battle-progress-ui.active {
+    display: flex;
+}
+
+#battle-progress-ui .battle-progress-title {
+    text-align: center;
+    font-size: 1.3rem;
+    color: var(--neon-orange);
+    animation: pulse 1.5s infinite;
+}
+
+#battle-progress-ui .battle-progress-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#battle-progress-ui .progress-bar {
+    height: 30px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 15px;
+    overflow: hidden;
+    position: relative;
+}
+
+#battle-progress-ui .progress-fill {
+    height: 100%;
+    transition: width 0.5s ease;
+    border-radius: 15px;
+}
+
+#battle-progress-ui .attacker-progress {
+    background: linear-gradient(90deg, var(--neon-green), #00ff88);
+}
+
+#battle-progress-ui .defender-progress {
+    background: linear-gradient(90deg, var(--neon-pink), #ff0088);
+}
+
+#battle-progress-ui .progress-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 0 5px rgba(0,0,0,0.8);
+}
+
+#battle-progress-ui .battle-log {
+    height: 120px;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.4);
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 0.8rem;
+}
+
+#battle-progress-ui .battle-log div {
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+#battle-progress-ui [data-action="retreat-multiplayer"] {
+    align-self: center;
+    width: 50%;
+}
+
+/* Battle Result UI */
+#battle-result-ui {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 92%;
+    max-width: 400px;
+    background: var(--panel-bg);
+    border: var(--border-neon);
+    border-radius: 12px;
+    padding: 25px;
+    z-index: 560;
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+}
+
+#battle-result-ui.active {
+    display: flex;
+}
+
+#battle-result-ui .result-title {
+    font-size: 1.5rem;
+    color: var(--neon-blue);
+}
+
+#battle-result-ui .result-text {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+#battle-result-ui .result-text:contains("Victory") {
+    color: var(--neon-green);
+}
+
+#battle-result-ui .result-text:contains("Defeat") {
+    color: var(--neon-pink);
+}
+
+#battle-result-ui .result-details {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+}
+
+#battle-result-ui [data-action="close-battle-result"] {
+    align-self: center;
+    width: 60%;
+}

@@ -1,0 +1,13 @@
+=== Spec.md 修复总结 ===
+
+已修复的问题：
+1. 修复金币自动增长的矛盾 - 删除代码示例中的 GameState.player.gold += owned * 10;
+2. 将 SC-008 和 SC-009 标注为 Phase 3 内容
+3. 修复卡牌数据结构 - 将 resources 改为 gold 和 food
+4. 修复 acquireCard() 函数 - 正确使用 resources.gold 和 resources.food
+5. 删除缺乏依据的 SC-001（30分钟征服10个领土）
+6. 重新编号 Success Criteria（SC-002 到 SC-006）
+7. 清理 Assumptions 部分 - 删除武器系统的详细描述
+8. 将 FR-013 到 FR-018 标注为 [Phase 3]
+
+修复后的文件：.specify/specs/002-core-gameplay/system/spec.md
