@@ -1,235 +1,174 @@
-# Tasks: Core Gameplay System / 核心游戏玩法系统任务列表
+# Tasks: Core Gameplay System / 核心游戏玩法系统
 
-**Input**: Design documents from `specs/002-core-gameplay/`
+**Feature**: 002-core-gameplay | **Branch**: `feat/core-gameplay-system` | **Date**: 2026-07-01
 
-**Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/, quickstart.md
+**Input**: Design documents from `/specs/002-core-gameplay/` (plan.md, spec.md, data-model.md, contracts/, quickstart.md)
 
-**Tests**: Tests are OPTIONAL - only include them if explicitly requested in the feature specification.
+**Prerequisites**: plan.md (✅), spec.md (✅), data-model.md (✅), contracts/ (✅)
 
-**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+**Tests**: NOT requested in the feature spec — test tasks omitted per task-generation rules. Manual validation scenarios from `quickstart.md` are referenced in the Polish phase.
+
+**Organization**: Tasks grouped by user story (US1–US7) so each story is independently implementable and testable. Priority order: P1 → P2 → P3 → P4.
 
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies)
-- **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
-- Include exact file paths in descriptions
-
-<!--
-  ============================================================================
-  IMPORTANT: Tasks MUST be organized by user story so each story can be:
-  - Implemented independently
-  - Tested independently
-  - Delivered as an MVP increment
-
-  All tasks MUST follow the checklist format:
-  - [ ] T001 [P] [US1] Description with file path
-  ============================================================================
--->
+- **[Story]**: User story this task belongs to (US1–US7)
+- Paths use actual repo layout: `frontend/src/...` and `backend/functions/<fn>/index.js`
 
 ---
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-**Purpose**: Project initialization and basic structure
+**Purpose**: Establish the authoritative game-state container and backend SCF scaffolding that all stories depend on.
 
-- [X] T001 Create project structure per implementation plan in `frontend/src/` and `backend/functions/`
-- [X] T002 [P] Install frontend dependencies: `npm install` in `frontend/` (Vite, GSAP, etc.)
-- [X] T003 [P] Install backend dependencies: `npm install` in `backend/` (@cloudbase/node-sdk, mysql2, jsonwebtoken, ws)
-- [X] T004 [P] Configure linting and formatting tools (.eslintrc.js, .prettierrc)
-- [X] T005 [P] Create environment configuration files: `frontend/.env`, `backend/.env`
+- [ ] T001 Establish `GameState.js` as the authoritative game-state container and move game initialization out of `frontend/src/main.js` into `frontend/src/game/GameState.js` (per CD-001: frontend is authoritative; backend is persistence only)
+- [ ] T002 [P] Scaffold backend SCF functions for `game-save`, `game-load`, `game-saves-list` under `backend/functions/` following `contracts/game-api.md` request/response schemas
+- [ ] T003 [P] Set up DB connection pooling (global scope) and `.env` config loading in `backend/shared/db.js` and `backend/.env` (per research.md Section 1: SCF pooling)
+
+**Checkpoint**: GameState is the single source of truth; backend save/load functions are scaffolded.
 
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-**Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
+**Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented.
 
-**⚠️ CRITICAL**: No user story work can begin until this phase is complete
+**⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-### 2.1 Database Schema Setup
+- [ ] T004 Define core game balance config (resource rates, training costs, rarity distribution, chest probabilities) in `frontend/src/game/config.js` (per spec FR-003/FR-004/FR-006 and Assumptions)
+- [ ] T005 [P] Implement JWT validation middleware in `backend/shared/auth.js` (per `contracts/auth-api.md`; validates signature + expiry on every protected endpoint)
+- [ ] T006 Implement game save/load SCF functions (`game-save`, `game-load`, `game-saves-list`) in `backend/functions/` with JWT auth, ≤1MB size validation, and user isolation (per `contracts/game-api.md`)
+- [ ] T007 [P] Implement card API SCF functions (`card-purchase`, `card-collection`, `card-definitions`) in `backend/functions/` with atomic token deduction (per `contracts/card-api.md`)
+- [ ] T008 Implement frontend API client methods for save/load/card in `frontend/src/api/client.js` with silent-fail + 3-retry + localStorage fallback (per CD-005)
 
-- [X] T006 Create database schema script in `backend/schema.sql` (users, game_saves, cards, connections, alliances, weapons, gift_packs tables)
-- [X] T007 [P] Create database migration scripts for TDSQL-C Serverless MySQL 8.0
-- [X] T008 [P] Seed initial data: territories (Earth ~200, Mars ~100) in `scripts/seed-territories.js`
-
-### 2.2 SCF Function Infrastructure (Research Task 1 & 2)
-
-- [X] T009 Implement SCF database connection pooling in `backend/functions/_common/db.js` (mysql2, global scope, pool size=1)
-- [X] T010 [P] Implement Redis client initialization in `backend/functions/_common/redis.js` (ioredis, global scope, environment variables)
-- [X] T011 [P] Implement JWT authentication middleware in `backend/functions/_common/auth.js` (jsonwebtoken, environment variable JWT_SECRET)
-- [X] T012 Implement input validation utilities in `backend/functions/_common/validator.js` (validator library, SQL injection prevention)
-
-### 2.3 Frontend Game State Management (Research Task 4)
-
-- [X] T013 Refactor `frontend/src/main.js` (44KB monolith) into modular structure:
-  - [X] T013a [P] Create `frontend/src/game/GameState.js` - Central game state management with event system
-  - [X] T013b [P] Create `frontend/src/game/map.js` - SVG map rendering, zoom, pan (viewBox manipulation)
-  - [X] T013c [P] Create `frontend/src/game/battle.js` - Auto-battle logic with formula: Base 50% + advantage bonus + random(-10%, +10%)
-  - [X] T013d [P] Create `frontend/src/game/resources.js` - Resource calculation loop (population auto-grow, food consumption, gold from chests)
-  - [X] T013e [P] Create `frontend/src/game/cards.js` - Card collection and permanent effects application
-  - [X] T013f [P] Create `frontend/src/game/connections.js` - Connection building and bonuses
-  - [X] T013g [P] Create `frontend/src/game/chests.js` - Chest spawning and loot logic
-  - [X] T013h [P] Create `frontend/src/game/military.js` - Military training system
-- [X] T014 Implement backend save/load system in `backend/functions/game-save/` and `backend/functions/game-load/` (every 30 seconds auto-save)
-- [X] T015 Implement silent failure + retry logic in `frontend/src/game/GameState.js` (3 retries before localStorage fallback)
-
-**Checkpoint**: Foundation ready - user story implementation can now begin in parallel
+**Checkpoint**: Foundation ready — user story implementation can now begin.
 
 ---
 
 ## Phase 3: User Story 1 - Map Exploration & Territory Conquest (Priority: P1) 🎯 MVP
 
-**Goal**: Player can view interactive SVG map, select and conquer adjacent territories through battles, unlock Mars world after conquering 90% of Earth.
+**Goal**: Player views interactive SVG map (zoom/pan), selects adjacent territories, conquers them via battle, and unlocks Mars at 90% conquest.
 
-**Independent Test**: (1) Loading map screen, (2) Verifying zoom/pan controls work, (3) Selecting an adjacent territory, (4) Winning a battle, (5) Verifying territory is added to player's owned territories.
+**Independent Test**: Load map → zoom/pan works → click adjacent enemy territory → battle starts → on win, territory added to owned list +1 token; conquer 90% of Earth → Mars switch appears.
 
 ### Implementation for User Story 1
 
-- [X] T016 [P] [US1] Implement zoom control in `frontend/src/game/map.js` (scroll wheel → viewBox width decreases/increases, use requestAnimationFrame for smooth animation)
-- [X] T017 [P] [US1] Implement pan control in `frontend/src/game/map.js` (drag → viewBox x/y change, touch events with passive listeners)
-- [X] T018 [US1] Implement territory selection logic in `frontend/src/game/map.js` (check adjacency, display "Not adjacent" message if not adjacent)
-- [X] T019 [US1] Implement battle initiation in `frontend/src/game/battle.js` (click adjacent enemy territory → auto-battle starts)
-- [X] T020 [US1] Implement battle outcome calculation in `frontend/src/game/battle.js` (Formula: Base 50% + (advantage × 5% per 10% military advantage) + random(-10%, +10%), capped at 10%-90%)
-- [X] T021 [US1] Implement territory acquisition logic in `frontend/src/game/map.js` (if battle win → add territory to player.territories, +1 token reward)
-- [X] T022 [US1] Implement Mars world unlock logic in `frontend/src/game/map.js` (if player conquers 90% of Earth → unlock Mars, show switch button)
-- [X] T023 [US1] Implement world switch UI in `frontend/src/components/WorldSwitch.js` (button to switch between Earth and Mars maps)
+- [ ] T009 [US1] Implement territory conquest flow that calls the battle system and awards +1 token on victory in `frontend/src/game/map.js` (per spec US1 acceptance 4–5)
+- [ ] T010 [US1] Implement Mars world unlock at 90% Earth conquest + world-switch button in `frontend/src/game/map.js` (per FR-010; quickstart Scenario 2)
+- [ ] T011 [US1] Wire conquest result → `GameState` update + auto-save trigger in `frontend/src/main.js` (per FR-011)
 
-**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
+**Checkpoint**: US1 fully functional and testable independently.
 
 ---
 
-## Phase 4: User Story 2 - Battle & Military Management (Priority: P1)
+## Phase 4: User Story 2 - Battle with Military Management (Priority: P1) 🎯 MVP
 
-**Goal**: Player can train military units, battle outcome considers military strength, cooldown period after battle, front line display during battle, retreat option.
+**Goal**: Player trains military to influence battle; battle outcome uses military-strength formula with randomness; global cooldown; retreat option; front-line visualization.
 
-**Independent Test**: (1) Training military units, (2) Attacking a territory, (3) Verifying battle outcome considers military strength, (4) Verifying cooldown prevents immediate re-attack, (5) Verifying front line display.
+**Independent Test**: Train military (cost 1k pop + 5 tokens → +10 strength) → attack territory → outcome reflects military advantage → cooldown blocks re-attack → front line renders during battle.
 
 ### Implementation for User Story 2
 
-- [X] T024 [P] [US2] Implement military training UI in `frontend/src/components/ui/MilitaryPanel.js` (button + cost display: 1k population + 5 tokens per 10 military, training queue, auto-train toggle)
-- [X] T025 [US2] Implement military training logic in `frontend/src/game/military.js` (trainMilitary() function, check resources, update GameState, training queue with progress, auto-train)
-- [X] T026 [US2] Implement battle cooldown system in `frontend/src/game/battle.js` (global cooldown: 30s-5min after any battle, cannot attack ANY territory during cooldown, cooldown display in UI)
-- [X] T027 [US2] Implement retreat option in `frontend/src/game/battle.js` (battle starts → player can click "Retreat", 49.9% chance opponent continues attacking, additional military loss if retreat fails)
-- [X] T028 [US2] Implement front line display in `frontend/src/game/battle.js` (show front line using SVG overlay, update position based on battle casualties)
-- [X] T029 [US2] Update battle resolution in `frontend/src/game/battle.js` (apply military strength to battle outcome, update GameState with battle result, battle history tracking)
+- [ ] T012 [US2] Implement military training system (`trainMilitary`) in `frontend/src/game/military.js` (per FR-003: 1k pop + 5 tokens → +10 strength)
+- [ ] T013 [US2] Implement battle outcome formula (base 50% + 5% per 10% advantage + random ±10%, capped 10%–90%) in `frontend/src/game/battle.js` (per CD-002, FR-002)
+- [ ] T014 [US2] Implement global battle cooldown (30s–5min, based on intensity) in `frontend/src/game/battle.js` (per FR-009, quickstart Scenario 3)
+- [ ] T015 [US2] Implement retreat option (49.9% chance defender continues invading) in `frontend/src/game/battle.js` (per spec US2 acceptance 4)
+- [ ] T016 [US2] Implement front-line SVG visualization updated every 5s during battle in `frontend/src/game/BattleManager.js` + `frontend/src/styles/battlefield.css` (per FR-002)
 
-**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
+**Checkpoint**: US1 AND US2 both work independently.
 
 ---
 
-## Phase 5: User Story 3 - Resource Management (Priority: P1)
+## Phase 5: User Story 3 - Resource Management (Priority: P1) 🎯 MVP
 
-**Goal**: Player has multiple resource types (Population, Gold, Food, Tokens), resources displayed in UI, used for various game actions.
+**Goal**: Player has Population (auto-grow), Gold (chests/gift only), Food (consumed by military), Tokens (battles/quiz); all displayed and updated in real-time.
 
-**Independent Test**: (1) Verifying resource display in UI, (2) Waiting for population growth (10 seconds), (3) Opening a chest to earn gold, (4) Receiving gold from admin gift package, (5) Training military (should consume food and tokens).
+**Independent Test**: Wait 10s → population grows; train military → food drops; food=0 → 10%/min starvation; open chest → may gain gold; resource panel shows all four.
 
 ### Implementation for User Story 3
 
-- [X] T030 [P] [US3] Add gold and food to player object in `frontend/src/game/GameState.js` (initialize gold: 0, food: 500)
-- [X] T031 [US3] Implement resource calculation loop in `frontend/src/game/resources.js` (population auto-grows every 10s based on territories, food consumed by military every minute)
-- [X] T032 [US3] Implement starvation penalty in `frontend/src/game/resources.js` (if food = 0 → military strength decreases by 10% per minute)
-- [X] T033 [US3] Implement resource display UI in `frontend/src/components/ui/ResourcePanel.js` (top bar or side panel, update every second for display)
-- [X] T034 [US3] Implement chest spawning logic in `frontend/src/game/chests.js` (each territory has 8% chance normal chest, 0.5% chance giant chest)
-- [X] T035 [US3] Implement chest loot logic in `frontend/src/game/chests.js` (normal: 40% ≤500 gold; giant: 67% ≤6k gold, 30% ≤15k gold)
-- [X] T036 [US3] Implement chest UI in `frontend/src/components/ui/ChestPanel.js` (open chest animation, display gold received)
-- [X] T037 [US3] Implement gift package reception logic in `frontend/src/game/resources.js` (admin distributes gift packages → gold added to player.resources.gold)
+- [ ] T017 [US3] Add `gold` and `food` to `GameState` player object in `frontend/src/game/GameState.js` (per FR-004)
+- [ ] T018 [US3] Implement resource loop (pop auto-grow, food consumption, starvation penalty) in `frontend/src/game/resources.js` (per FR-004, Assumptions)
+- [ ] T019 [US3] Implement chest spawn (8% normal / 0.5% giant) + loot logic in `frontend/src/game/chests.js` (per FR-004, Assumptions)
+- [ ] T020 [US3] Implement resource display UI (population/gold/food/tokens, real-time) in `frontend/src/main.js` + `frontend/src/styles/components.css` (per FR-005)
+- [ ] T021 [US3] Implement gift-pack admin API (`gift-pack-create`) in `backend/functions/` + player redemption in `frontend/src/pages/admin/` (per FR-004, CD-004; admin-only in Phase 1)
 
-**Checkpoint**: At this point, User Stories 1, 2, AND 3 should all work independently
+**Checkpoint**: All P1 stories (US1, US2, US3) independently functional — MVP complete.
 
 ---
 
-## Phase 6: User Story 4 - Card Collection & Effects (Priority: P2)
+## Phase 6: User Story 4 - Card Collection (Priority: P2)
 
-**Goal**: Player can purchase card packs (5 tokens/pack), receive cards named after cities with 6 rarities, card effects are permanent additions to player's totals.
+**Goal**: Player buys card packs (5 tokens) for city-named cards of 6 rarities; card effects are permanent additions; infrastructure totals tracked.
 
-**Independent Test**: (1) Purchasing a card pack, (2) Receiving a random card named after a city, (3) Verifying card rarity matches city size, (4) Verifying card's population/military/resources are permanently added to player's totals, (5) Verifying card has airport/train/military unit data.
+**Independent Test**: Buy pack (5 tokens) → random city card → its population/military/gold/food/airports/train/militaryUnits permanently added; card in `cardCollection`; infrastructure totals updated.
 
 ### Implementation for User Story 4
 
-- [ ] T038 [P] [US4] Define card database in `frontend/src/game/cardRarities.js` (1000+ city-named cards across 6 rarities: Common, Rare, Super Rare, Mythic, Legendary, Ultra Legendary)
-- [ ] T039 [US4] Implement card pack purchase logic in `frontend/src/game/cards.js` (two types: (1) Regular card pack - costs 5 tokens, random city-named card from database based on rarity weight: Common 40%, Rare 25%, Super Rare 15%, Mythic 10%, Legendary 7%, Ultra Legendary 3%; (2) Fighter/Bomb card pack - costs 10 tokens, random weapon card from database (NOT city cards), based on weapon rarity weight. IMPORTANT: Weapons can ONLY be obtained from Fighter/Bomb card packs, NOT regular card packs (FR-018))
-- [ ] T040 [US4] Implement card acquisition logic in `frontend/src/game/cards.js` (acquireCard() function, permanently add card.population, card.military, card.gold, card.food to player's totals)
-- [ ] T041 [US4] Implement card infrastructure tracking in `frontend/src/game/cards.js` (add card.airports to player.infrastructure.totalAirports, card.trainStations to player.infrastructure.totalTrainStations, card.militaryUnits to player.infrastructure.totalMilitaryUnits)
-- [ ] T042 [US4] Implement card collection UI in `frontend/src/components/CardCollection.js` (display all acquired cards, show card details: name, rarity, population, military, resources, airports, trainStations, militaryUnits)
-- [ ] T043 [US4] Implement card shop UI in `frontend/src/components/CardShop.js` (display card pack price: 5 tokens, purchase button, animation for receiving card)
+- [ ] T022 [US4] Define/refine card rarity database with ranges per rarity in `frontend/src/game/cardRarities.js` (per FR-006, card-api.md rarity table)
+- [ ] T023 [US4] Implement `acquireCard()` applying permanent effects + infrastructure totals in `frontend/src/game/cards.js` (per FR-006; cards NOT consumed on use)
+- [ ] T024 [US4] Implement card purchase flow (5 tokens) + collection display UI in `frontend/src/main.js` + `frontend/src/styles/components.css` (per quickstart Scenario 5)
 
-**Checkpoint**: At this point, User Stories 1, 2, 3, AND 4 should all work independently
+**Checkpoint**: US4 testable independently.
 
 ---
 
-## Phase 7: User Story 6 - Connection System (Priority: P2)
+## Phase 7: User Story 6 - Connection Building (Priority: P2)
 
-**Goal**: Player can build connections between controlled territories (Air routes, Train routes, Military unit routes), connections provide benefits based on type.
+**Goal**: Player builds Air/Train/Military routes between owned adjacent territories using card infrastructure; each route gives cumulative bonus up to +100%.
 
-**Independent Test**: (1) Selecting two adjacent owned territories, (2) Building an air route (requires airports on cards), (3) Building a train route (requires train stations on cards), (4) Building a military route (requires military units on cards), (5) Verifying connection benefits are applied.
+**Independent Test**: Own 2 adjacent territories + cards with airports → build air route (100 gold) → airport indicator on map + transport bonus applied.
 
 ### Implementation for User Story 6
 
-- [ ] T044 [P] [US6] Implement connection building UI in `frontend/src/components/ConnectionBuilder.js` (select two adjacent owned territories, select connection type: airport/train/military)
-- [ ] T045 [US6] Implement connection building logic in `frontend/src/game/connections.js` (buildConnection() function, check if player has required infrastructure from collected cards, cost: 100 gold/connection)
-- [ ] T046 [US6] Implement connection benefits in `frontend/src/game/connections.js` (airport → air transport efficiency +20%, train → land transport speed +20%, military → military movement speed +20% (cooldown reduced by 20%))
-- [ ] T047 [US6] Implement connection display in `frontend/src/components/ConnectionDisplay.js` (visual indicators on map: airport icon, train icon, military icon)
+- [ ] T025 [US6] Implement `buildConnection()` requiring matching card infrastructure + 100 gold cost in `frontend/src/game/connections.js` (per FR-007)
+- [ ] T026 [US6] Implement connection UI + bonus application (cumulative, +20% per route, cap +100%) in `frontend/src/main.js` + `frontend/src/styles/components.css` (per FR-007)
 
-**Checkpoint**: At this point, User Stories 1, 2, 3, 4, AND 6 should all work independently
+**Checkpoint**: US6 testable independently.
 
 ---
 
-## Phase 8: User Story 5 - Alliance System (Priority: P3, Phase 2)
+## Phase 8: User Story 5 - Alliance System (Priority: P3 · Phase 2)
 
-**Goal**: Player can send alliance requests to other players, alliances provide shared vision and resource sharing. (Requires WebSocket infrastructure)
+**Goal**: Player sends alliance requests; allies get shared vision + resource sharing via WebSocket. **Deferred to Phase 2** (requires WebSocket infra).
 
-**Independent Test**: (1) Sending alliance request, (2) Other player accepts, (3) Verifying alliance benefits (shared vision), (4) Testing resource sharing.
+**Independent Test**: Player A sends request → B accepts → both see each other's territories; A shares 100 gold → B receives immediately via WebSocket.
 
-### Implementation for User Story 5 (Phase 2 - Requires WebSocket)
+### Implementation for User Story 5
 
-- [ ] T048 [P] [US5] Implement WebSocket infrastructure using Tencent Cloud API Gateway in `backend/functions/websocket-connect/`, `websocket-message/`, `websocket-disconnect/` (Research Task 3)
-- [ ] T049 [US5] Implement alliance data model in `backend/schema.sql` (alliances table: id, user1_id, user2_id, status, benefits, created_at)
-- [ ] T050 [US5] Implement alliance request logic in `backend/functions/alliance-create/` (send alliance request, store in database, notify other player via WebSocket)
-- [ ] T051 [US5] Implement alliance acceptance logic in `backend/functions/alliance-accept/` (accept alliance request, update status to 'active', enable shared vision)
-- [ ] T052 [US5] Implement shared vision logic in `frontend/src/game/alliances.js` (if allied → can see other player's controlled territories on map)
-- [ ] T053 [US5] Implement resource sharing logic in `frontend/src/game/alliances.js` (if allied → can send resources to ally, ally receives resources)
-- [ ] T054 [US5] Implement alliance UI in `frontend/src/components/Alliance.js` (send request, accept request, view allied players, chat)
+- [ ] T027 [US5] Implement alliance data model + state in `frontend/src/game/alliances.js` (per data-model §2.6)
+- [ ] T028 [US5] Implement alliance SCF functions (`alliance-create`, `alliance-accept`, `alliance-share`) + WebSocket integration in `backend/functions/` (per FR-008)
+- [ ] T029 [US5] Implement alliance UI (request/accept/shared vision/resource share) in `frontend/src/pages/` (per spec US5)
 
-**Checkpoint**: At this point, all Phase 1 user stories should be complete, Alliance System (Phase 2) should be functional
+**Checkpoint**: US5 testable after WebSocket infra is in place.
 
 ---
 
-## Phase 9: User Story 7 - Weapon System (Priority: P4, Phase 3)
+## Phase 9: User Story 7 - Weapon System (Priority: P4 · Phase 3)
 
-**Goal**: Player can acquire weapons of 4 categories (Sea, Land, Air, Cyber), weapons can be attack-type or defense-type, weapons can be evolved, weapons can be traded in multiplayer mode.
+**Goal**: Player acquires 4-category weapons (attack/defense), evolves them, trades via tokens. **Deferred to Phase 3** (requires full multiplayer + admin tools).
 
-**Independent Test**: (1) Admin releases a new weapon, (2) Player acquires weapon (from shop or card pack), (3) Player evolves weapon, (4) Player uses weapon for attack or defense, (5) Player transfers weapon to another player, (6) Player trades weapon with tokens.
+**Independent Test**: Admin releases weapon → player meets territory/pop reqs → acquires weapon → evolves to L2 (more effect, more energy) → trades with custom token price.
 
-### Implementation for User Story 7 (Phase 3 - Requires Multiplayer Infrastructure)
+### Implementation for User Story 7
 
-- [ ] T055 [P] [US7] Define weapon database in `frontend/src/game/weaponRarities.js` (100+ weapons across 4 categories: Sea, Land, Air, Cyber)
-- [ ] T056 [US7] Implement weapon data model in `backend/schema.sql` (weapons table: id, name, category, weapon_type, effect_value, energy_cost, level, evolution_levels, unlock_requirements, tradeable, created_by)
-- [ ] T057 [US7] Implement weapon acquisition logic in `frontend/src/game/weapons.js` (acquire from weapon shop or from Fighter/Bomb card packs (NOT regular card packs))
-- [ ] T058 [US7] Implement weapon evolution logic in `frontend/src/game/weapons.js` (evolveWeapon() function, increases effect value but also increases energy consumption, requires resources (gold/food), tokens NOT required)
-- [ ] T059 [US7] Implement weapon unlock requirements logic in `frontend/src/game/weapons.js` (higher-level weapons require minimum territories and population to unlock, tokens NOT part of unlock requirements)
-- [ ] T060 [US7] Implement weapon use in battles in `frontend/src/game/battle.js` (if player has attack-type weapon → increase attack power; if defense-type weapon → increase defense capability)
-- [ ] T061 [US7] Implement weapon trading logic in `frontend/src/game/weapons.js` (in multiplayer mode, weapons CAN be transferred between players, traded using tokens, seller can set custom prices)
-- [ ] T062 [US7] Implement admin weapon release logic in `backend/functions/weapon-release/` (admin can release new weapons via admin panel/API, configurable attributes: category, weapon type, effect value, energy cost, evolution levels, unlock requirements)
-- [ ] T063 [US7] Implement weapon shop UI in `frontend/src/components/WeaponShop.js` (display available weapons, purchase weapon, evolve weapon, view weapon details)
-- [ ] T064 [US7] Implement weapon inventory UI in `frontend/src/components/WeaponInventory.js` (display all acquired weapons, show weapon level, evolution levels, tradeable status)
+- [ ] T030 [US7] Implement weapon data model + categories in `frontend/src/game/weapons.js` (per data-model §2.7, FR-013)
+- [ ] T031 [US7] Implement weapon acquisition + evolution UI in `frontend/src/main.js` (per FR-014, FR-015)
+- [ ] T032 [US7] Implement weapon SCF functions (`weapon-release`, `weapon-trade`, `weapon-transfer`) in `backend/functions/` (per FR-016, FR-017)
 
-**Checkpoint**: At this point, all user stories should be complete
+**Checkpoint**: All user stories complete.
 
 ---
 
 ## Phase 10: Polish & Cross-Cutting Concerns
 
-**Purpose**: Improvements that affect multiple user stories
+**Purpose**: Improvements affecting multiple user stories.
 
-- [ ] T065 [P] Documentation updates in `docs/` (API documentation, game mechanics documentation, admin guide)
-- [ ] T066 Code cleanup and refactoring (remove unused code, improve code organization, add comments)
-- [ ] T067 Performance optimization across all stories (SVG rendering optimization, GameState event system optimization, API response caching)
-- [ ] T068 [P] Additional manual tests in `tests/manual/` (test each user story independently, test cross-story interactions)
-- [ ] T069 Security hardening (input validation, SQL injection prevention, XSS prevention, CSRF prevention)
-- [ ] T070 Run quickstart.md validation scenarios (Scenario 1-7, verify all success criteria SC-001 to SC-009)
-- [ ] T071 [P] Implement performance test for SC-001 in `tests/performance/battle-performance.test.js` (verify battle outcome is determined within 3 seconds of starting battle, automate battle initiation and measure time to outcome)
-- [ ] T072 [P] Implement unit tests for SC-003 in `tests/unit/card-effects.test.js` (verify card effects are applied correctly: population, military, resources, airports, trainStations, militaryUnits are permanently added to player's totals, test each card rarity type)
-- [ ] T073 [P] Implement analytics tracking for SC-006 in `frontend/src/utils/analytics.js` and `backend/src/analytics/index.js` (track all gameplay actions: battle initiation/outcome, card purchase/use, resource management; log success/failure status; generate daily report showing % of actions completed without errors; target: 90% of actions complete without errors)
+- [ ] T033 [P] Refactor `frontend/src/main.js` monolith — extract UI wiring into `frontend/src/components/` (per plan.md Implementation Notes)
+- [ ] T034 [P] Add i18n keys for all new UI strings in `frontend/src/i18n/` (per Constitution Principle V)
+- [ ] T035 [P] Performance optimization: SVG layer caching + batched state updates in `frontend/src/game/map.js` (per research.md Section 5)
+- [ ] T036 Run `quickstart.md` validation scenarios 1–7 (map, military, resources, cards, connections, save/load) and fix any failures
 
 ---
 
@@ -237,183 +176,86 @@
 
 ### Phase Dependencies
 
-- **Setup (Phase 1)**: No dependencies - can start immediately
-- **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
-- **User Stories (Phase 3+)**: All depend on Foundational phase completion
-  - User stories can then proceed in parallel (if staffed)
-  - Or sequentially in priority order (P1 → P2 → P3 → P4)
+- **Setup (Phase 1)**: No dependencies — start immediately
+- **Foundational (Phase 2)**: Depends on Setup — BLOCKS all user stories
+- **User Stories (Phase 3–9)**: All depend on Foundational (Phase 2)
+  - Phase 1 (P1) stories: US1, US2, US3
+  - Phase 2 (P2) stories: US4, US6
+  - Phase 3 (P3) story: US5 (needs WebSocket)
+  - Phase 4 (P4) story: US7 (needs multiplayer + admin)
 - **Polish (Phase 10)**: Depends on all desired user stories being complete
 
 ### User Story Dependencies
 
-- **User Story 1 (P1)**: Can start after Foundational (Phase 2) - No dependencies on other stories
-- **User Story 2 (P1)**: Can start after Foundational (Phase 2) - May integrate with US1 but should be independently testable
-- **User Story 3 (P1)**: Can start after Foundational (Phase 2) - May integrate with US1/US2 but should be independently testable
-- **User Story 4 (P2)**: Can start after Foundational (Phase 2) - May integrate with US1/US2/US3 but should be independently testable
-- **User Story 6 (P2)**: Can start after Foundational (Phase 2) - May integrate with US4 but should be independently testable
-- **User Story 5 (P3, Phase 2)**: Can start after User Story 1 completion - Requires WebSocket infrastructure
-- **User Story 7 (P4, Phase 3)**: Can start after User Story 5 completion - Requires complete multiplayer infrastructure and admin tools
+- **US1 (P1)**: After Foundational — no dependency on other stories
+- **US2 (P1)**: After Foundational — integrates with US1 conquest flow
+- **US3 (P1)**: After Foundational — consumed by US2 (food) and US1 (tokens)
+- **US4 (P2)**: After Foundational — independent
+- **US6 (P2)**: After Foundational — independent of US4
+- **US5 (P3)**: After Foundational + WebSocket infra
+- **US7 (P4)**: After Foundational + multiplayer/admin
 
 ### Within Each User Story
 
-- Models before services
-- Services before endpoints
-- Core implementation before integration
+- Config/state before logic
+- Logic before UI wiring
 - Story complete before moving to next priority
 
 ### Parallel Opportunities
 
-- All Setup tasks marked [P] can run in parallel
-- All Foundational tasks marked [P] can run in parallel (within Phase 2)
-- Once Foundational phase completes, all user stories can start in parallel (if team capacity allows)
-- All [P] tasks within a user story can run in parallel
-- Different user stories can be worked on in parallel by different team members
+- All Setup tasks marked [P] can run in parallel (T002, T003)
+- All Foundational tasks marked [P] can run in parallel (T005, T007)
+- Once Foundational completes, US1/US2/US3 can proceed in parallel (if staffed)
+- US4 and US6 can run in parallel after P1
+- All Polish tasks marked [P] can run in parallel (T033, T034, T035)
 
 ---
 
-## Parallel Example: User Story 1
+## Parallel Example: User Story 2 (Battle)
 
 ```bash
-# Launch all [P] tasks for User Story 1 together:
-Task: "Implement zoom control in frontend/src/game/map.js"
-Task: "Implement pan control in frontend/src/game/map.js"
-
-# Launch all non-[P] tasks sequentially:
-Task: "Implement territory selection logic in frontend/src/game/map.js"
-Task: "Implement battle initiation in frontend/src/game/battle.js"
-Task: "Implement battle outcome calculation in frontend/src/game/battle.js"
+# Launch independent logic modules together:
+Task T012: "Implement military training system in frontend/src/game/military.js"
+Task T013: "Implement battle outcome formula in frontend/src/game/battle.js"
+Task T014: "Implement global battle cooldown in frontend/src/game/battle.js"
+# Then: T015 (retreat) and T016 (front line) build on T013
 ```
 
 ---
 
 ## Implementation Strategy
 
-### MVP First (User Story 1 Only)
+### MVP First (User Stories 1–3 only)
 
 1. Complete Phase 1: Setup
-2. Complete Phase 2: Foundational (CRITICAL - blocks all stories)
-3. Complete Phase 3: User Story 1
-4. **STOP and VALIDATE**: Test User Story 1 independently using quickstart.md Scenario 2
+2. Complete Phase 2: Foundational (CRITICAL — blocks all stories)
+3. Complete Phase 3–5: US1, US2, US3
+4. **STOP and VALIDATE**: Test US1–US3 independently via quickstart scenarios 2–4
 5. Deploy/demo if ready
 
 ### Incremental Delivery
 
----
-
-## Completed Work (Session 2 - June 27-28, 2026)
-
-### ✅ Phase 1: Setup - 100% Complete
-- [X] T001: Project structure created
-- [X] T002: Frontend dependencies installed (`npm install` - 14 packages)
-- [X] T003: Backend dependencies installed (`npm install` - 14 packages)
-- [X] T004: ESLint configuration (`.eslintrc.js`)
-- [X] T005: Environment configuration (`frontend/.env`, `backend/.env.example`)
-
-### ✅ Phase 2: Foundational - 100% Complete
-- [X] T006: Database schema (`backend/schema.sql`)
-- [X] T007: Database migration script (`scripts/migrate-database.js`)
-- [X] T008: Seed data script (`scripts/seed-territories.js`)
-- [X] T009-T012: SCF function infrastructure (`_common/db.js`, `redis.js`, `auth.js`, `validator.js`)
-- [X] T013: Modular refactoring (GameState.js, map.js, battle.js, resources.js, cards.js, military.js, connections.js, chests.js)
-- [X] T014: Backend save/load system (`game-save/index.js`, `game-load/index.js`)
-- [X] T015: Silent failure + retry logic (GameState.js)
-
-### ✅ Phase 3: User Story 1 (MVP) - 100% Complete
-- [X] T016-T023: Map exploration & territory conquest (zoom, pan, battle, Mars unlock)
-
-### ✅ Additional UI Components Created
-- [X] `frontend/src/components/ui/ResourcePanel.js` - Resource display panel
-- [X] `frontend/src/components/ui/MilitaryPanel.js` - Military management panel
-- [X] `frontend/src/components/ui/BattlePanel.js` - Battle display panel
-- [X] `frontend/src/components/GameUI.js` - Main game UI manager
-- [X] `frontend/src/styles/game-ui.css` - Game UI styles
-
-### ✅ Additional Backend Functions Created
-- [X] `backend/functions/alliance-create/index.js` - Alliance creation
-- [X] `backend/functions/alliance-join/index.js` - Alliance joining
-- [X] `backend/functions/alliance-leave/index.js` - Alliance leaving
-- [X] `backend/functions/alliance-list/index.js` - Alliance listing
-- [X] `backend/functions/_common/admin-auth.js` - Admin authentication middleware
-- [X] `backend/functions/admin-get-users/index.js` - Admin get users
-- [X] `backend/functions/admin-get-stats/index.js` - Admin get statistics
-
-### ✅ Additional Frontend Components Created
-- [X] `frontend/src/components/ui/AlliancePanel.js` - Alliance management UI
-- [X] `frontend/src/components/ui/CardPanel.js` - Card collection UI
-
----
-
-**Total Progress**: ~40% complete (29 out of 73 tasks)
-
-**Next Steps**:
-1. Complete User Story 2: Battle & Military Management (T024-T029)
-2. Complete User Story 3: Resource Management (T030-T037)
-3. Complete User Story 4: Card & Gift Pack System (T038-T045)
-4. Complete User Story 6: Connection System (T044-T047)
-5. Complete User Story 5: Alliance System (T048-T054) - Backend complete, need frontend
-6. Complete User Story 7: Admin Dashboard (T055-T064) - Backend started, need frontend
-7. Phase 10: Polish (T065-T073)
-
-1. Complete Setup + Foundational → Foundation ready
-2. Add User Story 1 → Test independently → Deploy/Demo (MVP!)
-3. Add User Story 2 → Test independently → Deploy/Demo
-4. Add User Story 3 → Test independently → Deploy/Demo
-5. Add User Story 4 → Test independently → Deploy/Demo
-6. Add User Story 6 → Test independently → Deploy/Demo
-7. Add User Story 5 (Phase 2) → Test independently → Deploy/Demo
-8. Add User Story 7 (Phase 3) → Test independently → Deploy/Demo
-9. Each story adds value without breaking previous stories
+1. Setup + Foundational → foundation ready
+2. Add US1 → US2 → US3 → Test → MVP demo
+3. Add US4 → US6 → Test → demo
+4. (Phase 2) Add US5 (alliance) after WebSocket
+5. (Phase 3) Add US7 (weapons) after multiplayer
 
 ### Parallel Team Strategy
 
-With multiple developers:
-
-1. Team completes Setup + Foundational together
-2. Once Foundational is done:
-   - Developer A: User Story 1
-   - Developer B: User Story 2
-   - Developer C: User Story 3
-   - Developer D: User Story 4
-   - Developer E: User Story 6
-3. Stories complete and integrate independently
-4. Phase 2 (User Story 5): Requires dedicated developer for WebSocket infrastructure
-5. Phase 3 (User Story 7): Requires dedicated developer for weapon system and admin tools
+1. Team completes Setup + Foundational
+2. Once Foundational done:
+   - Developer A: US1 → US2 → US3 (P1 core loop)
+   - Developer B: US4 + US6 (P2 systems)
+3. Stories integrate independently
 
 ---
 
 ## Notes
 
 - [P] tasks = different files, no dependencies
-- [Story] label maps task to specific user story for traceability
-- Each user story should be independently completable and testable
-- Verify tests fail before implementing
-- Commit after each task or logical group
-- Stop at any checkpoint to validate story independently
-- Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence
-- Phase 1 (User Stories 1-4, 6) is single-player vs AI
-- Phase 2 (User Story 5) requires WebSocket infrastructure for real-time communication
-- Phase 3 (User Story 7) requires complete multiplayer infrastructure and admin tools
-
----
-
-## Summary
-
-- **Total task count**: 73 tasks
-- **Task count per user story**:
-  - US1 (P1): 8 tasks (T016-T023)
-  - US2 (P1): 6 tasks (T024-T029)
-  - US3 (P1): 8 tasks (T030-T037)
-  - US4 (P2): 6 tasks (T038-T043)
-  - US6 (P2): 4 tasks (T044-T047)
-  - US5 (P3, Phase 2): 7 tasks (T048-T054)
-  - US7 (P4, Phase 3): 10 tasks (T055-T064)
-  - Cross-cutting: 4 tasks (T065-T067, T070-T073)
-- **Parallel opportunities identified**: 21 tasks marked [P] can run in parallel
-- **Independent test criteria for each story**: Documented in each Phase section
-- **Suggested MVP scope**: User Story 1 only (map exploration and territory conquest)
-- **Format validation**: ✅ ALL tasks follow the checklist format (checkbox, ID, labels, file paths)
-- **New tasks added**: T071 (performance test for SC-001), T072 (unit tests for SC-003), T073 (analytics tracking for SC-006)
-
----
-
-**End of Document**
+- [Story] label maps task to a specific user story for traceability
+- US5 (alliance) and US7 (weapons) are explicitly deferred to Phase 2 / Phase 3 per spec
+- Chest + gift-pack logic lives under US3 (resources) per spec FR-004
+- Save/load uses cloud API with localStorage fallback (CD-005)
+- Commit after each task or logical group; stop at any checkpoint to validate independently
