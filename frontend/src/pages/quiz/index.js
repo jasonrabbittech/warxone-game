@@ -6,7 +6,7 @@
 import { QuizSelect } from './select.js';
 import { QuizPlay } from './play.js';
 import { QuizResults } from '../../components/QuizResults.js';
-import { QuizService } from '../../services/quizService.js';
+import { getResults } from '../../services/quizService.js';
 
 export class QuizPage {
   /**
@@ -76,7 +76,7 @@ export class QuizPage {
   async onQuizComplete(attemptId, dailyStatus) {
     try {
       // Fetch results
-      const results = await QuizService.getResults(attemptId, this.token);
+      const results = await getResults(attemptId, this.token);
       
       // Show results
       this.showResults(results, dailyStatus);

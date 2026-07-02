@@ -1375,10 +1375,21 @@ function createGame() {
     }
 
     // ---- Initialize ----
-    setupEventDelegation();
-    setupLanguageSelectors();
-    initMapPan();
-    checkAutoLogin();
+    // Wait for DOM to be fully loaded before setting up event listeners
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventDelegation();
+            setupLanguageSelectors();
+            initMapPan();
+            checkAutoLogin();
+        });
+    } else {
+        // DOM is already loaded
+        setupEventDelegation();
+        setupLanguageSelectors();
+        initMapPan();
+        checkAutoLogin();
+    }
 
     return { destroy };
 }

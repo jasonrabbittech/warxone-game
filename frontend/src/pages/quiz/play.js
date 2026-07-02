@@ -5,7 +5,7 @@
 
 import { QuizTimer } from '../../components/QuizTimer.js';
 import { QuizQuestion } from '../../components/QuizQuestion.js';
-import { QuizService } from '../../services/quizService.js';
+import { startQuiz, getDailyStatus, submitAnswer } from '../../services/quizService.js';
 
 export class QuizPlay {
   /**
@@ -36,7 +36,7 @@ export class QuizPlay {
       this.renderLoading();
       
       // Start quiz (call backend)
-      const result = await QuizService.startQuiz(this.difficulty, this.token);
+      const result = await startQuiz(this.difficulty, this.token);
       this.attemptId = result.attemptId;
       this.questions = result.questions;
       this.timerPerQuestion = result.timerPerQuestion;
@@ -83,7 +83,7 @@ export class QuizPlay {
       // All questions answered, fetch daily status then show results
       let dailyStatus = null;
       try {
-        dailyStatus = await QuizService.getDailyStatus(this.token);
+        dailyStatus = await getDailyStatus(this.token);
       } catch (err) {
         console.error('Failed to fetch daily status:', err);
       }
@@ -155,7 +155,7 @@ export class QuizPlay {
     const timeSpent = this.timer ? this.timer.getRemainingSeconds() : 0;
 
     try {
-      const result = await QuizService.submitAnswer(
+      const result = await submitAnswer(
         this.attemptId,
         this.currentIndex,
         selected,

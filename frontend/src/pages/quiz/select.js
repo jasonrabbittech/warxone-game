@@ -3,7 +3,7 @@
  * Difficulty selection UI with daily limit check
  */
 
-import { QuizService } from '../services/quizService.js';
+import { getDailyStatus } from '../../services/quizService.js';
 
 export class QuizSelect {
   /**
@@ -23,7 +23,7 @@ export class QuizSelect {
    */
   async init() {
     try {
-      this.dailyStatus = await QuizService.getDailyStatus(this.token);
+      this.dailyStatus = await getDailyStatus(this.token);
       this.render();
     } catch (err) {
       console.error('Failed to check daily status:', err);
